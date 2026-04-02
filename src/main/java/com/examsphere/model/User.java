@@ -5,6 +5,8 @@ import java.time.LocalDateTime;
 import com.examsphere.enums.UserRole;
 
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -15,7 +17,6 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.experimental.FieldDefaults;
-
 
 
 @Entity
@@ -34,6 +35,8 @@ public class User {
     String fullName;
     String email;
     String password;
+
+    @Enumerated(EnumType.STRING)
     UserRole role;
     //Boolean enabled = true;
     LocalDateTime createdAt;
