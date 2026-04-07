@@ -15,9 +15,8 @@ import lombok.experimental.FieldDefaults;
 @FieldDefaults(level = lombok.AccessLevel.PRIVATE)
 public class LoginRequest {
     
-    @NotBlank(message = "Email must not be blank")
-    @Email(message = "Invalid email format")
-    String email;
+    @NotBlank(message = "Username must not be blank")
+    String username; // Đăng nhập bằng username 
 
     @NotBlank(message = "Password must not be blank")
     String password;
