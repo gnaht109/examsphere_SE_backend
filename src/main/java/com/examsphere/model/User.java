@@ -1,7 +1,6 @@
 package com.examsphere.model;
 
 import java.time.LocalDateTime;
-
 import com.examsphere.enums.UserRole;
 
 import jakarta.persistence.Entity;
@@ -18,10 +17,9 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.experimental.FieldDefaults;
 
-
 @Entity
 @Table(name = "users")
-@Data //Auto implement getter setter
+@Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
@@ -31,18 +29,21 @@ public class User {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     Long id;
+
     String username;
     String fullName;
+    
+    @jakarta.persistence.Column(unique = true, nullable = false)
     String email;
+
+    @jakarta.persistence.Column(nullable = false)
     String password;
 
     @Enumerated(EnumType.STRING)
     UserRole role;
-    //Boolean enabled = true;
     LocalDateTime createdAt;
-
     @PrePersist
-    void onCreate() {
+    void onCreate(){
         createdAt = LocalDateTime.now();
     }
 }
