@@ -24,18 +24,16 @@ public class AuthService {
     PasswordEncoder passwordEncoder;
     JwtUtils jwtUtils;
 
-    public JwtResponse login(LoginRequest request) {
-        User user = userRepository.findByEmail(request.getEmail());
-        
-        if (user == null) {
-            throw new AppException(ErrorCode.USER_NOT_EXISTED);
-        }
-
-        boolean authenticated = passwordEncoder.matches(request.getPassword(), user.getPassword());
-        if (!authenticated) {
-            throw new AppException(ErrorCode.INVALID_PASSWORD);
-        }
-
+public JwtResponse login(LoginRequest request) {
+    User user = userRepository.findByEmail(request.getEmail());
+    
+    if (user == null){
+        throw new AppException(ErrorCode.USER_NOT_FOUND); 
+    }
+    boolean authenticated = passwordEncoder.matches(request.getPassword(), user.getPassword());
+    if (!authenticated){
+        throw new AppException(ErrorCode.PASSWORD_INCORRECT);
+    }
         String token = jwtUtils.generateTokenFromUsername(user.getEmail());
         return JwtResponse.builder()
                 .token(token)
