@@ -25,21 +25,23 @@ public class AuthService {
     JwtUtils jwtUtils;
 
 public JwtResponse login(LoginRequest request) {
-    User user = userRepository.findByEmail(request.getEmail());
+    User user = userRepository.findByUsername(request.getUsername()); 
     
     if (user == null){
         throw new AppException(ErrorCode.USER_NOT_FOUND); 
     }
+    
     boolean authenticated = passwordEncoder.matches(request.getPassword(), user.getPassword());
     if (!authenticated){
         throw new AppException(ErrorCode.PASSWORD_INCORRECT);
     }
-        String token = jwtUtils.generateTokenFromUsername(user.getEmail());
-        return JwtResponse.builder()
-                .token(token)
-                .type("Bearer")
-                .email(user.getEmail())
-                .role(user.getRole())
-                .build();
+        String token = jwtUtils.generateTokenFromUsername(user.getUsername()); 
+    
+    return JwtResponse.builder()
+            .token(token)
+            .type("Bearer")
+            .username(user.getUsername())
+            .role(user.getRole())
+            .build();
     }
 }
