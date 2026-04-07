@@ -9,17 +9,23 @@ import org.springframework.security.web.SecurityFilterChain;
 
 @Configuration
 public class SecurityConfig {
+
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
-        .csrf(csrf -> csrf.disable())
-        .authorizeHttpRequests(auth -> auth
-            .requestMatchers("/api/auth/login", "/api/users/signup").permitAll()
-            .anyRequest().authenticated() 
-        );    
+            .csrf(csrf -> csrf.disable())
+            .authorizeHttpRequests(auth -> auth
+                // Hiện tại cho phép tất cả để nhóm dễ làm code
+                .requestMatchers("/api/auth/**", "/api/users/**").permitAll() 
+                .anyRequest().permitAll() 
+                
+                /* KHI NÀO XONG THÌ ĐỔI LẠI THÀNH:
+                .requestMatchers("/api/auth/login", "/api/users/signup").permitAll()
+                .anyRequest().authenticated() 
+                */
+            );    
         return http.build();
     }
-    
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
