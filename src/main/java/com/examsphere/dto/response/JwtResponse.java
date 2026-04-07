@@ -15,6 +15,6 @@ import lombok.experimental.FieldDefaults;
 public class JwtResponse {
     String token;
     String type = "Bearer";
-    String email;
+    String username;
     UserRole role;
 }
