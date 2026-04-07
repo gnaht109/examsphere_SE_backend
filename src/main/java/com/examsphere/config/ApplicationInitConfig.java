@@ -28,6 +28,7 @@ public class ApplicationInitConfig {
             if (userRepository.findByUsername("admin") == null) {
             User admin = User.builder()
                 .username("admin")
+                .email("admin@examsphere.com")
                 .password(passwordEncoder.encode("admin"))
                 .role(UserRole.ADMIN)
                 .build();
