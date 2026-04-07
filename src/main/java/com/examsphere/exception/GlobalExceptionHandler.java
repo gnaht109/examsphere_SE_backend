@@ -12,7 +12,7 @@ import com.examsphere.dto.response.ApiResponse;
 public class GlobalExceptionHandler{
 
     @ExceptionHandler(value = Exception.class) 
-    ResponseEntity<ApiResponse> handlingRuntimeException(RuntimeException ex) {
+    ResponseEntity<ApiResponse> handlingRuntimeException(Exception ex) {
         ApiResponse apiResponse = new ApiResponse();
 
         apiResponse.setCode(ErrorCode.UNCAUGHT_ERROR.getCode());
