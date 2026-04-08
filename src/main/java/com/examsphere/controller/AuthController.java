@@ -13,7 +13,7 @@ import lombok.experimental.FieldDefaults;
 
 @RestController
 @RequestMapping("/api/auth") 
-@CrossOrigin(origins = "http://localhost:3000")
+@CrossOrigin(origins = "http://localhost:5173")
 @RequiredArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class AuthController {
@@ -25,5 +25,6 @@ public class AuthController {
         return ApiResponse.<JwtResponse>builder()
                 .data(authService.login(request))
                 .build();
+        
     }
 }

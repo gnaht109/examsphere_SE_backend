@@ -13,6 +13,7 @@ public class GlobalExceptionHandler{
 
     @ExceptionHandler(value = Exception.class) 
     ResponseEntity<ApiResponse> handlingRuntimeException(Exception ex) {
+        ex.printStackTrace(); // Log the actual exception
         ApiResponse apiResponse = new ApiResponse();
 
         apiResponse.setCode(ErrorCode.UNCAUGHT_ERROR.getCode());
