@@ -28,7 +28,6 @@ import lombok.experimental.FieldDefaults;
  * ExamController — Teacher Side
  *
  * Auth note: teacher identity is currently passed via "X-User-Id" header.
- * Replace with JWT principal extraction once Member 2 integrates Spring Security.
  */
 @RestController
 @RequestMapping("/api")
@@ -59,7 +58,7 @@ public class ExamController {
     }
 
     // GET /api/exams/{id} — TEACHER/STUDENT: full exam with questions
-    // Member 4 (Session) calls this when student starts an exam
+    // Student calls this when starting an exam, so it must be accessible to both roles (but only if exam is PUBLISHED)
     @GetMapping("/exams/{id}")
     ApiResponse<ExamResponse> getExamById(@PathVariable Long id) {
         return ApiResponse.<ExamResponse>builder()

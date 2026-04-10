@@ -15,6 +15,6 @@ public class QuestionOptionResponse {
 
     Long id;
     String content;
-    Boolean isCorrect;   // Member 5 (Grading) uses this for auto-grading
+    Boolean isCorrect;   // Grading logic needs this to auto-grade MCQ answers
     Integer optionOrder;
 }
