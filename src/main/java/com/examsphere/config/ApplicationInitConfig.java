@@ -24,17 +24,16 @@ public class ApplicationInitConfig {
 
     @Bean
     ApplicationRunner applicationRunner(UserRepository userRepository){
-        return args ->{
-            if(userRepository.findByUsername("admin").isEmpty()){
-
-                User admin = User.builder()
-                    .username("admin")
-                    .password(passwordEncoder.encode("admin"))
-                    .role(UserRole.ADMIN)
-                    .build();
-                userRepository.save(admin);
+        return args -> {
+            if (userRepository.findByUsername("admin") == null) {
+            User admin = User.builder()
+                .username("admin")
+                .email("admin@examsphere.com")
+                .password(passwordEncoder.encode("admin"))
+                .role(UserRole.ADMIN)
+                .build();
+            userRepository.save(admin);
             }
         };
     }
-
 }
