@@ -14,6 +14,15 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.experimental.FieldDefaults;
 
+/**
+ * QuestionRequest
+ *
+ * MULTIPLE_CHOICE : fill content + points + options (>= 2, exactly 1 isCorrect=true)
+ * TRUE_FALSE      : fill content + points + options (exactly 2: "True" / "False")
+ * SHORT_ANSWER    : fill content (the passage/topic) + subQuestions (>= 1 sub-question,
+ *                   each sub-question has its own MCQ options)
+ *                   → points field is ignored; total points = sum of subQuestion.points
+ */
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -24,6 +33,7 @@ public class QuestionRequest {
     @NotBlank(message = "Content must not be blank")
     String content;
 
+    // Used for MULTIPLE_CHOICE and TRUE_FALSE only
     @Positive(message = "Points must be positive")
     @Builder.Default
     Double points = 1.0;
@@ -31,11 +41,13 @@ public class QuestionRequest {
     @NotNull(message = "Question type must not be null")
     QuestionType questionType;
 
-    String explaination;
-
     Integer questionOrder;
 
-    // Required for MULTIPLE_CHOICE / TRUE_FALSE; ignored for ESSAY / SHORT_ANSWER
+    // For MULTIPLE_CHOICE and TRUE_FALSE
     @Valid
     List<QuestionOptionRequest> options;
+
+    // For SHORT_ANSWER only — the MCQ sub-questions under the passage
+    @Valid
+    List<SubQuestionRequest> subQuestions;
 }

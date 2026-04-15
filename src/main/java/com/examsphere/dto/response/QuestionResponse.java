@@ -10,6 +10,13 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.experimental.FieldDefaults;
 
+/**
+ * QuestionResponse
+ *
+ * MULTIPLE_CHOICE / TRUE_FALSE : options populated, subQuestions null
+ * SHORT_ANSWER                 : subQuestions populated (each with its own options),
+ *                                options null, content is the passage text
+ */
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -21,9 +28,11 @@ public class QuestionResponse {
     String content;
     Double points;
     QuestionType questionType;
-    String explaination;
     Integer questionOrder;
 
-    // Null for ESSAY / SHORT_ANSWER; populated for MULTIPLE_CHOICE / TRUE_FALSE
+    // MULTIPLE_CHOICE / TRUE_FALSE only
     List<QuestionOptionResponse> options;
+
+    // SHORT_ANSWER only — each sub-question is a full MCQ item
+    List<SubQuestionResponse> subQuestions;
 }

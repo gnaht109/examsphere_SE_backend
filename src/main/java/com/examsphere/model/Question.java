@@ -25,6 +25,13 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.experimental.FieldDefaults;
 
+/**
+ * Question — three types:
+ *   MULTIPLE_CHOICE : content + options (QuestionOption list)
+ *   TRUE_FALSE      : content + options (QuestionOption list, exactly 2)
+ *   SHORT_ANSWER    : passage/topic in content + subQuestions (SubQuestion list),
+ *                     each sub-question has its own MCQ options (SubQuestionOption)
+ */
 @Entity
 @Table(name = "questions")
 @Data
@@ -38,16 +45,18 @@ public class Question {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     Long id;
 
-    @Column(columnDefinition = "TEXT")
+    // For MULTIPLE_CHOICE / TRUE_FALSE: the question text
+    // For SHORT_ANSWER: the reading passage / topic paragraph
+    @Column(columnDefinition = "TEXT", nullable = false)
     String content;
 
-    Double points;
+    // Points for MULTIPLE_CHOICE / TRUE_FALSE
+    // For SHORT_ANSWER: total points = sum of sub-question points (stored per sub-question)
+    @Builder.Default
+    Double points = 1.0;
 
     @Enumerated(EnumType.STRING)
     QuestionType questionType;
-
-    @Column(columnDefinition = "TEXT")
-    String explaination;
 
     Integer questionOrder;
 
@@ -55,7 +64,13 @@ public class Question {
     @JoinColumn(name = "exam_id")
     Exam exam;
 
+    // Used by MULTIPLE_CHOICE and TRUE_FALSE only
     @OneToMany(mappedBy = "question", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
     List<QuestionOption> options = new ArrayList<>();
+
+    // Used by SHORT_ANSWER only — each sub-question is an independent MCQ
+    @OneToMany(mappedBy = "question", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
+    List<SubQuestion> subQuestions = new ArrayList<>();
 }
