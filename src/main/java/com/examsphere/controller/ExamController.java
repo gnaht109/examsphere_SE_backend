@@ -15,23 +15,20 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.examsphere.dto.request.ExamRequest;
 import com.examsphere.dto.request.QuestionRequest;
+import com.examsphere.dto.request.SubQuestionRequest;
 import com.examsphere.dto.response.ApiResponse;
 import com.examsphere.dto.response.ExamResponse;
 import com.examsphere.dto.response.QuestionResponse;
+import com.examsphere.dto.response.SubQuestionResponse;
 import com.examsphere.service.ExamService;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 
-/**
- * ExamController — Teacher Side
- *
- * Auth note: teacher identity is currently passed via "X-User-Id" header.
- */
 @RestController
 @RequestMapping("/api")
-@CrossOrigin(origins = "http://localhost:3000")
+@CrossOrigin(origins = "http://localhost:5173")
 @RequiredArgsConstructor
 @FieldDefaults(level = lombok.AccessLevel.PRIVATE, makeFinal = true)
 public class ExamController {
@@ -40,7 +37,6 @@ public class ExamController {
 
     // ── Exam endpoints ────────────────────────────────────────────────────────
 
-    // GET /api/exams — STUDENT: list all published exams
     @GetMapping("/exams")
     ApiResponse<List<ExamResponse>> getPublishedExams() {
         return ApiResponse.<List<ExamResponse>>builder()
@@ -48,7 +44,6 @@ public class ExamController {
                 .build();
     }
 
-    // GET /api/exams/my — TEACHER: list their own exams
     @GetMapping("/exams/my")
     ApiResponse<List<ExamResponse>> getMyExams(
             @RequestHeader("X-User-Id") Long userId) {
@@ -57,8 +52,6 @@ public class ExamController {
                 .build();
     }
 
-    // GET /api/exams/{id} — TEACHER/STUDENT: full exam with questions
-    // Student calls this when starting an exam, so it must be accessible to both roles (but only if exam is PUBLISHED)
     @GetMapping("/exams/{id}")
     ApiResponse<ExamResponse> getExamById(@PathVariable Long id) {
         return ApiResponse.<ExamResponse>builder()
@@ -66,7 +59,6 @@ public class ExamController {
                 .build();
     }
 
-    // POST /api/exams — TEACHER: create new exam (starts as DRAFT)
     @PostMapping("/exams")
     ApiResponse<ExamResponse> createExam(
             @Valid @RequestBody ExamRequest request,
@@ -76,7 +68,6 @@ public class ExamController {
                 .build();
     }
 
-    // PUT /api/exams/{id} — TEACHER (owner): update exam metadata
     @PutMapping("/exams/{id}")
     ApiResponse<ExamResponse> updateExam(
             @PathVariable Long id,
@@ -87,7 +78,6 @@ public class ExamController {
                 .build();
     }
 
-    // DELETE /api/exams/{id} — TEACHER (owner): delete exam
     @DeleteMapping("/exams/{id}")
     ApiResponse<Void> deleteExam(
             @PathVariable Long id,
@@ -98,7 +88,6 @@ public class ExamController {
                 .build();
     }
 
-    // PUT /api/exams/{id}/publish — TEACHER: publish a DRAFT exam
     @PutMapping("/exams/{id}/publish")
     ApiResponse<ExamResponse> publishExam(
             @PathVariable Long id,
@@ -110,7 +99,7 @@ public class ExamController {
 
     // ── Question endpoints ────────────────────────────────────────────────────
 
-    // POST /api/exams/{id}/questions — TEACHER: add question to exam
+    // Works for all 3 types: MULTIPLE_CHOICE, TRUE_FALSE, SHORT_ANSWER
     @PostMapping("/exams/{id}/questions")
     ApiResponse<ExamResponse> addQuestion(
             @PathVariable Long id,
@@ -121,7 +110,6 @@ public class ExamController {
                 .build();
     }
 
-    // PUT /api/questions/{id} — TEACHER: update a question
     @PutMapping("/questions/{id}")
     ApiResponse<QuestionResponse> updateQuestion(
             @PathVariable Long id,
@@ -132,7 +120,6 @@ public class ExamController {
                 .build();
     }
 
-    // DELETE /api/questions/{id} — TEACHER: delete a question
     @DeleteMapping("/questions/{id}")
     ApiResponse<Void> deleteQuestion(
             @PathVariable Long id,
@@ -140,6 +127,41 @@ public class ExamController {
         examService.deleteQuestion(id, userId);
         return ApiResponse.<Void>builder()
                 .message("Question deleted successfully")
+                .build();
+    }
+
+    // ── Sub-Question endpoints (SHORT_ANSWER only) ────────────────────────────
+
+    // POST /api/questions/{id}/sub-questions — add a sub-question to a SHORT_ANSWER passage
+    @PostMapping("/questions/{id}/sub-questions")
+    ApiResponse<QuestionResponse> addSubQuestion(
+            @PathVariable Long id,
+            @Valid @RequestBody SubQuestionRequest request,
+            @RequestHeader("X-User-Id") Long userId) {
+        return ApiResponse.<QuestionResponse>builder()
+                .data(examService.addSubQuestion(id, request, userId))
+                .build();
+    }
+
+    // PUT /api/sub-questions/{id} — update a sub-question
+    @PutMapping("/sub-questions/{id}")
+    ApiResponse<SubQuestionResponse> updateSubQuestion(
+            @PathVariable Long id,
+            @Valid @RequestBody SubQuestionRequest request,
+            @RequestHeader("X-User-Id") Long userId) {
+        return ApiResponse.<SubQuestionResponse>builder()
+                .data(examService.updateSubQuestion(id, request, userId))
+                .build();
+    }
+
+    // DELETE /api/sub-questions/{id} — delete a sub-question
+    @DeleteMapping("/sub-questions/{id}")
+    ApiResponse<Void> deleteSubQuestion(
+            @PathVariable Long id,
+            @RequestHeader("X-User-Id") Long userId) {
+        examService.deleteSubQuestion(id, userId);
+        return ApiResponse.<Void>builder()
+                .message("Sub-question deleted successfully")
                 .build();
     }
 }

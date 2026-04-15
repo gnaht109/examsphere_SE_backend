@@ -26,7 +26,8 @@ public enum ErrorCode {
     
     // Question — 3000s
     QUESTION_NOT_FOUND(3001, "Question not found", HttpStatus.NOT_FOUND),
-
+    INVALID_QUESTION_TYPE(3002, "Operation not allowed for this question type", HttpStatus.BAD_REQUEST),
+    
     // Submission — 4000s
     SUBMISSION_NOT_FOUND(4001, "Submission not found", HttpStatus.NOT_FOUND),
     SUBMISSION_ALREADY_SUBMITTED(4002, "Exam already submitted", HttpStatus.BAD_REQUEST),
