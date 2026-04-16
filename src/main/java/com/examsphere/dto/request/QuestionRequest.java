@@ -3,6 +3,7 @@ package com.examsphere.dto.request;
 import java.util.List;
 
 import com.examsphere.enums.QuestionType;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
@@ -29,6 +30,7 @@ public class QuestionRequest {
     Double points = 1.0;
 
     @NotNull(message = "Question type must not be null")
+    @JsonProperty("type")
     QuestionType questionType;
 
     String explaination;

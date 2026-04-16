@@ -1,5 +1,6 @@
 package com.examsphere.service;
 
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -24,24 +25,48 @@ public class AuthService {
     PasswordEncoder passwordEncoder;
     JwtUtils jwtUtils;
 
-public JwtResponse login(LoginRequest request) {
-    User user = userRepository.findByUsername(request.getUsername()); 
-    
-    if (user == null){
-        throw new AppException(ErrorCode.USER_NOT_FOUND); 
+    public JwtResponse login(LoginRequest request) {
+        User user = userRepository.findByUsername(request.getUsername()); 
+        
+        if (user == null){
+            throw new AppException(ErrorCode.USER_NOT_FOUND); 
+        }
+        
+        boolean authenticated = passwordEncoder.matches(request.getPassword(), user.getPassword());
+        if (!authenticated){
+            throw new AppException(ErrorCode.PASSWORD_INCORRECT);
+        }
+            String token = jwtUtils.generateToken(user); 
+        
+        return JwtResponse.builder()
+                .token(token)
+                .type("Bearer")
+                .username(user.getUsername())
+                .role(user.getRole())
+                .build();
     }
-    
-    boolean authenticated = passwordEncoder.matches(request.getPassword(), user.getPassword());
-    if (!authenticated){
-        throw new AppException(ErrorCode.PASSWORD_INCORRECT);
+
+    public Long getCurrentUserId() {
+        var authentication = SecurityContextHolder.getContext().getAuthentication();
+
+        if (authentication == null || !authentication.isAuthenticated()) {
+            throw new AppException(ErrorCode.UNAUTHORIZED);
+        }
+
+        String username = (String) authentication.getPrincipal();
+
+        return userRepository.findByUsername(username)
+                //.orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND))
+                .getId();
     }
-        String token = jwtUtils.generateTokenFromUsername(user.getUsername()); 
-    
-    return JwtResponse.builder()
-            .token(token)
-            .type("Bearer")
-            .username(user.getUsername())
-            .role(user.getRole())
-            .build();
+
+    public User getCurrentUser() {
+        var authentication = SecurityContextHolder.getContext().getAuthentication();
+
+        String username = (String) authentication.getPrincipal();
+
+        return userRepository.findByUsername(username);
+                //.orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
     }
+
 }
