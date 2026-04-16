@@ -18,7 +18,7 @@ import lombok.experimental.FieldDefaults;
 
 @RestController
 @RequestMapping("/api/users")
-@CrossOrigin(origins = "http://localhost:3000")
+@CrossOrigin(origins = "http://localhost:5173")
 @RequiredArgsConstructor
 @FieldDefaults(level = lombok.AccessLevel.PRIVATE,makeFinal=true)
 public class UserController {
