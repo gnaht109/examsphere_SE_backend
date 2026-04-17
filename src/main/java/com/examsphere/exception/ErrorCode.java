@@ -27,6 +27,9 @@ public enum ErrorCode {
     // Question — 3000s
     QUESTION_NOT_FOUND(3001, "Question not found", HttpStatus.NOT_FOUND),
 
+    // Passage -- 3500s
+    PASSAGE_NOT_FOUND(3501, "Passage not found", HttpStatus.NOT_FOUND),
+
     // Submission — 4000s
     SUBMISSION_NOT_FOUND(4001, "Submission not found", HttpStatus.NOT_FOUND),
     SUBMISSION_ALREADY_SUBMITTED(4002, "Exam already submitted", HttpStatus.BAD_REQUEST),

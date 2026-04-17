@@ -5,7 +5,6 @@ import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
-import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import com.examsphere.enums.ExamStatus;
@@ -23,7 +22,7 @@ public interface ExamRepository extends JpaRepository<Exam, Long> {
         JOIN FETCH e.createdBy
         WHERE e.createdBy.id = :userId
     """)
-    List<Exam> findByCreatedById(@Param("userId") Long userId);
+    List<Exam> findByCreatedById(Long userId);
 
     // Ownership check before PUT / DELETE
     boolean existsByIdAndCreatedById(Long examId, Long userId);
@@ -43,6 +42,20 @@ public interface ExamRepository extends JpaRepository<Exam, Long> {
         WHERE e.createdBy.id = :userId
     """)
     List<Exam> findMyExams(Long userId);
+
+    @Query("""
+        SELECT e FROM Exam e
+        LEFT JOIN FETCH e.createdBy
+        WHERE e.id = :id
+    """)
+    Optional<Exam> findByIdBasic(Long id);
+
+    @Query("""
+        SELECT e FROM Exam e
+        LEFT JOIN FETCH e.createdBy
+        WHERE e.id = :id AND e.status = :status
+    """)
+    Optional<Exam> findByIdBasicAndStatus(Long id, ExamStatus status);
 
 
 }

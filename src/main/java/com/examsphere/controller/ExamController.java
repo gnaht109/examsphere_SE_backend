@@ -13,10 +13,12 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.examsphere.dto.request.ExamRequest;
+import com.examsphere.dto.request.PassageRequest;
 import com.examsphere.dto.request.QuestionRequest;
 import com.examsphere.dto.response.ApiResponse;
 import com.examsphere.dto.response.ExamDetailResponse;
 import com.examsphere.dto.response.ExamResponse;
+import com.examsphere.dto.response.PassageResponse;
 import com.examsphere.dto.response.QuestionResponse;
 import com.examsphere.service.ExamService;
 
@@ -107,10 +109,10 @@ public class ExamController {
 
     // POST /api/exams/{examId}/questions — TEACHER: add question to exam
     @PostMapping("/exams/{examId}/questions")
-    ApiResponse<ExamDetailResponse> addQuestion(
+    ApiResponse<QuestionResponse> addQuestion(
             @PathVariable Long examId,
             @Valid @RequestBody QuestionRequest request) {
-        return ApiResponse.<ExamDetailResponse>builder()
+        return ApiResponse.<QuestionResponse>builder()
                 .data(examService.addQuestion(examId, request))
                 .build();
     }
@@ -137,4 +139,36 @@ public class ExamController {
                 .message("Question deleted successfully")
                 .build();
     }
+
+    //PASSAGE------------------------------------------------//
+
+    @PostMapping("/exams/{examId}/passages")
+    ApiResponse<PassageResponse> createPassage(
+        @PathVariable Long examId,
+        @RequestBody PassageRequest request
+        ) {
+        examService.createPassage(examId, request);
+        return ApiResponse.<PassageResponse>builder()
+                .message("Passage created successfully")
+                .build();
+    }
+
+    @PostMapping("/passages/{passageId}/questions")
+    ApiResponse<QuestionResponse> addQuestionToPassage(
+        @PathVariable Long passageId,
+        @RequestBody QuestionRequest request
+        ) {
+        examService.addQuestionToPassage(passageId, request);
+        return ApiResponse.<QuestionResponse>builder()
+                .message("Question added to passage successfully")
+                .build();
+    }
+
+    @DeleteMapping("/passages/{passageId}")
+    ApiResponse<Void> deletePassage(@PathVariable Long passageId) {
+        examService.deletePassage(passageId);
+        return ApiResponse.<Void>builder()
+                .message("Passage deleted successfully")
+                .build();
+        }
 }

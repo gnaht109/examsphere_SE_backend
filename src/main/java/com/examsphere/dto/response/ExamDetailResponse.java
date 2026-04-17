@@ -34,5 +34,7 @@ public class ExamDetailResponse {
 
     // Populated for GET /api/exams/{id} (full detail)
     // Null for list view, populated for detail view
+    List<PassageResponse> passages;
+    
     List<QuestionResponse> questions;
 }
