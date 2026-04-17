@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.examsphere.dto.request.ExamRequest;
 import com.examsphere.dto.request.QuestionRequest;
 import com.examsphere.dto.response.ApiResponse;
+import com.examsphere.dto.response.ExamDetailResponse;
 import com.examsphere.dto.response.ExamResponse;
 import com.examsphere.dto.response.QuestionResponse;
 import com.examsphere.service.ExamService;
@@ -58,27 +59,27 @@ public class ExamController {
     // GET /api/exams/{id} — TEACHER/STUDENT: full exam with questions
     // Student calls this when starting an exam, so it must be accessible to both roles (but only if exam is PUBLISHED)
     @GetMapping("/exams/{examId}")
-    ApiResponse<ExamResponse> getExamById(@PathVariable Long examId) {
-        return ApiResponse.<ExamResponse>builder()
+    ApiResponse<ExamDetailResponse> getExamById(@PathVariable Long examId) {
+        return ApiResponse.<ExamDetailResponse>builder()
                 .data(examService.getExamById(examId))
                 .build();
     }
 
     // POST /api/exams — TEACHER: create new exam (starts as DRAFT)
     @PostMapping("/exams")
-    ApiResponse<ExamResponse> createExam(
+    ApiResponse<ExamDetailResponse> createExam(
             @Valid @RequestBody ExamRequest request) {
-        return ApiResponse.<ExamResponse>builder()
+        return ApiResponse.<ExamDetailResponse>builder()
                 .data(examService.createExam(request))
                 .build();
     }
 
     // PUT /api/exams/{id} — TEACHER (owner): update exam metadata
     @PutMapping("/exams/{examId}")
-    ApiResponse<ExamResponse> updateExam(
+    ApiResponse<ExamDetailResponse> updateExam(
             @PathVariable Long examId,
             @Valid @RequestBody ExamRequest request) {
-        return ApiResponse.<ExamResponse>builder()
+        return ApiResponse.<ExamDetailResponse>builder()
                 .data(examService.updateExam(examId, request))
                 .build();
     }
@@ -95,9 +96,9 @@ public class ExamController {
 
     // PUT /api/exams/{id}/publish — TEACHER: publish a DRAFT exam
     @PutMapping("/exams/{examId}/publish")
-    ApiResponse<ExamResponse> publishExam(
+    ApiResponse<ExamDetailResponse> publishExam(
             @PathVariable Long examId) {
-        return ApiResponse.<ExamResponse>builder()
+        return ApiResponse.<ExamDetailResponse>builder()
                 .data(examService.publishExam(examId))
                 .build();
     }
@@ -106,10 +107,10 @@ public class ExamController {
 
     // POST /api/exams/{examId}/questions — TEACHER: add question to exam
     @PostMapping("/exams/{examId}/questions")
-    ApiResponse<ExamResponse> addQuestion(
+    ApiResponse<ExamDetailResponse> addQuestion(
             @PathVariable Long examId,
             @Valid @RequestBody QuestionRequest request) {
-        return ApiResponse.<ExamResponse>builder()
+        return ApiResponse.<ExamDetailResponse>builder()
                 .data(examService.addQuestion(examId, request))
                 .build();
     }
