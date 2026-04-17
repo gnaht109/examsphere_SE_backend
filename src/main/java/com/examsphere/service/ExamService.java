@@ -44,6 +44,7 @@ public class ExamService {
                 .collect(Collectors.toList());
     }
 
+    @Transactional
     public List<ExamResponse> getMyExams() {
         Long userId = authService.getCurrentUserId();
 
