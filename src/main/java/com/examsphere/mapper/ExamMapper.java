@@ -9,6 +9,7 @@ import org.mapstruct.MappingTarget;
 import com.examsphere.dto.request.ExamRequest;
 import com.examsphere.dto.request.QuestionOptionRequest;
 import com.examsphere.dto.request.QuestionRequest;
+import com.examsphere.dto.response.ExamDetailResponse;
 import com.examsphere.dto.response.ExamResponse;
 import com.examsphere.dto.response.QuestionOptionResponse;
 import com.examsphere.dto.response.QuestionResponse;
@@ -19,7 +20,9 @@ import com.examsphere.model.QuestionOption;
 @Mapper(componentModel = "spring")
 public interface ExamMapper {
 
-    // ── Exam ──────────────────────────────────────────────────────────────────
+    // ─────────────────────────────────────────────
+    // EXAM - CREATE / UPDATE
+    // ─────────────────────────────────────────────
 
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "createdBy", ignore = true)
@@ -29,12 +32,6 @@ public interface ExamMapper {
     @Mapping(target = "updatedAt", ignore = true)
     Exam toExam(ExamRequest request);
 
-    @Mapping(target = "createdById", source = "createdBy.id")
-    @Mapping(target = "createdByUsername", source = "createdBy.username")
-    @Mapping(target = "questionCount", expression = "java(exam.getQuestions().size())")
-    @Mapping(target = "questions", ignore = true) // handled manually in service
-    ExamResponse toExamResponse(Exam exam);
-
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "createdBy", ignore = true)
     @Mapping(target = "questions", ignore = true)
@@ -43,14 +40,35 @@ public interface ExamMapper {
     @Mapping(target = "updatedAt", ignore = true)
     void updateExam(ExamRequest request, @MappingTarget Exam exam);
 
-    // ── Question ──────────────────────────────────────────────────────────────
+    // ─────────────────────────────────────────────
+    // EXAM - LIST (ExamCard / lightweight)
+    // ─────────────────────────────────────────────
+
+    @Mapping(target = "createdById", source = "createdBy.id")
+    @Mapping(target = "createdByUsername", source = "createdBy.username")
+    @Mapping(target = "questionCount",
+            expression = "java(exam.getQuestions() != null ? exam.getQuestions().size() : 0)")
+    ExamResponse toExamResponse(Exam exam);
+
+    // ─────────────────────────────────────────────
+    // EXAM - DETAIL (EditExamPage)
+    // ─────────────────────────────────────────────
+
+    @Mapping(target = "createdById", source = "createdBy.id")
+    @Mapping(target = "createdByUsername", source = "createdBy.username")
+    @Mapping(target = "questions", ignore = true) // handled in service
+    ExamDetailResponse toDetailResponse(Exam exam);
+
+    // ─────────────────────────────────────────────
+    // QUESTION
+    // ─────────────────────────────────────────────
 
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "exam", ignore = true)
     @Mapping(target = "options", ignore = true)
     Question toQuestion(QuestionRequest request);
 
-    @Mapping(target = "options", ignore = true) // handled manually in service
+    @Mapping(target = "options", ignore = true) // handled in service
     QuestionResponse toQuestionResponse(Question question);
 
     @Mapping(target = "id", ignore = true)
@@ -58,7 +76,9 @@ public interface ExamMapper {
     @Mapping(target = "options", ignore = true)
     void updateQuestion(QuestionRequest request, @MappingTarget Question question);
 
-    // ── QuestionOption ────────────────────────────────────────────────────────
+    // ─────────────────────────────────────────────
+    // QUESTION OPTION
+    // ─────────────────────────────────────────────
 
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "question", ignore = true)

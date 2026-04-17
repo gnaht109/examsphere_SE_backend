@@ -8,6 +8,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.examsphere.dto.request.ExamRequest;
 import com.examsphere.dto.request.QuestionRequest;
+import com.examsphere.dto.response.ExamDetailResponse;
 import com.examsphere.dto.response.ExamResponse;
 import com.examsphere.dto.response.QuestionResponse;
 import com.examsphere.enums.ExamStatus;
@@ -44,6 +45,7 @@ public class ExamService {
                 .collect(Collectors.toList());
     }
 
+    @Transactional
     public List<ExamResponse> getMyExams() {
         Long userId = authService.getCurrentUserId();
 
@@ -53,13 +55,26 @@ public class ExamService {
                 .collect(Collectors.toList());
     }
 
-    public ExamResponse getExamById(Long id) {
-        Exam exam = findExamOrThrow(id);
+    @Transactional
+    public ExamDetailResponse getExamById(Long id) {
+        Exam exam = examRepository.findDetailById(id)
+                .orElseThrow(() -> new AppException(ErrorCode.EXAM_NOT_FOUND));
+        List<Question> questions = questionRepository.findQuestionsWithOptions(id);
+        
+        ExamDetailResponse response = examMapper.toDetailResponse(exam);
+        
+        response.setQuestions(
+                questions.stream()
+                        .map(this::toQuestionResponse)
+                        .collect(Collectors.toList())
+        );
+
+
         return toDetailResponse(exam);
     }
 
     @Transactional
-    public ExamResponse createExam(ExamRequest request) {
+    public ExamDetailResponse createExam(ExamRequest request) {
         User teacher = authService.getCurrentUser();
 
         Exam exam = examMapper.toExam(request);
@@ -73,7 +88,7 @@ public class ExamService {
     }
 
     @Transactional
-    public ExamResponse updateExam(Long id, ExamRequest request) {
+    public ExamDetailResponse updateExam(Long id, ExamRequest request) {
         Long userId = authService.getCurrentUserId();
         Exam exam = findAndVerifyOwnership(id, userId);
 
@@ -90,7 +105,7 @@ public class ExamService {
     }
 
     @Transactional
-    public ExamResponse publishExam(Long id) {
+    public ExamDetailResponse publishExam(Long id) {
         Long userId = authService.getCurrentUserId();
         Exam exam = findAndVerifyOwnership(id, userId);
 
@@ -103,7 +118,7 @@ public class ExamService {
     }
 
     @Transactional
-    public ExamResponse addQuestion(Long examId, QuestionRequest request) {
+    public ExamDetailResponse addQuestion(Long examId, QuestionRequest request) {
         Long userId = authService.getCurrentUserId();
         Exam exam = findAndVerifyOwnership(examId, userId);
 
@@ -145,19 +160,14 @@ public class ExamService {
         questionRepository.deleteById(questionId);
     }
 
-    Exam findExamOrThrow(Long id) {
-        return examRepository.findById(id)
-                .orElseThrow(() -> new AppException(ErrorCode.EXAM_NOT_FOUND));
-    }
 
     Exam findAndVerifyOwnership(Long id, Long userId) {
-        Exam exam = findExamOrThrow(id);
+        Exam exam = examRepository.findDetailById(id)
+                .orElseThrow(() -> new AppException(ErrorCode.EXAM_NOT_FOUND));
 
         if (!exam.getCreatedBy().getId().equals(userId)) {
             throw new AppException(ErrorCode.UNAUTHORIZED);
         }
-
-        System.out.println("2");
 
         return exam;
     }
@@ -172,8 +182,8 @@ public class ExamService {
         }
     }
 
-    ExamResponse toDetailResponse(Exam exam) {
-        ExamResponse response = examMapper.toExamResponse(exam);
+    ExamDetailResponse toDetailResponse(Exam exam) {
+        ExamDetailResponse response = examMapper.toDetailResponse(exam);
         response.setQuestions(
                 exam.getQuestions().stream()
                         .map(this::toQuestionResponse)
