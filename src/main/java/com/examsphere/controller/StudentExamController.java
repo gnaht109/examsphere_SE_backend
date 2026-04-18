@@ -11,7 +11,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.examsphere.dto.response.ApiResponse;
 import com.examsphere.dto.response.ExamDetailResponse;
 import com.examsphere.dto.response.ExamResponse;
-import com.examsphere.service.ExamService;
+import com.examsphere.service.StudentExamService;
 
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
@@ -23,21 +23,19 @@ import lombok.experimental.FieldDefaults;
 @FieldDefaults(level = lombok.AccessLevel.PRIVATE, makeFinal = true)
 public class StudentExamController {
 
-    ExamService examService;
+    StudentExamService studentExamService;
 
     @GetMapping("/exams")
     ApiResponse<List<ExamResponse>> getPublishedExams() {
-        System.out.println("Fetching published exams for student...");
         return ApiResponse.<List<ExamResponse>>builder()
-                .data(examService.getPublishedExams())
+                .data(studentExamService.getPublishedExams())
                 .build();
     }
 
     @GetMapping("/exams/{examId}")
     ApiResponse<ExamDetailResponse> getPublishedExamById(@PathVariable Long examId) {
-        System.out.println("Fetching published exam details for examId: " + examId);
         return ApiResponse.<ExamDetailResponse>builder()
-                .data(examService.getPublishedExamById(examId))
+                .data(studentExamService.getPublishedExamById(examId))
                 .build();
     }
 }

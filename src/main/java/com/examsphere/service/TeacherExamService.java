@@ -1,12 +1,12 @@
 package com.examsphere.service;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.examsphere.assembler.ExamDetailAssembler;
 import com.examsphere.dto.request.ExamRequest;
 import com.examsphere.dto.request.PassageRequest;
 import com.examsphere.dto.request.QuestionRequest;
@@ -15,7 +15,6 @@ import com.examsphere.dto.response.ExamResponse;
 import com.examsphere.dto.response.PassageResponse;
 import com.examsphere.dto.response.QuestionResponse;
 import com.examsphere.enums.ExamStatus;
-import com.examsphere.enums.QuestionType;
 import com.examsphere.exception.AppException;
 import com.examsphere.exception.ErrorCode;
 import com.examsphere.mapper.ExamMapper;
@@ -34,47 +33,15 @@ import lombok.experimental.FieldDefaults;
 @Service
 @RequiredArgsConstructor
 @FieldDefaults(level = lombok.AccessLevel.PRIVATE, makeFinal = true)
-public class ExamService {
+public class TeacherExamService {
 
     ExamRepository examRepository;
     PassageRepository passageRepository;
     QuestionRepository questionRepository;
     AuthService authService;
     ExamMapper examMapper;
-
-    @Transactional(readOnly = true)
-    public List<ExamResponse> getPublishedExams() {
-        return examRepository.findByStatus(ExamStatus.PUBLISHED)
-                .stream()
-                .map(examMapper::toExamResponse)
-                .collect(Collectors.toList());
-    }
-
-    @Transactional
-    public List<ExamResponse> getMyExams() {
-        Long userId = authService.getCurrentUserId();
-
-        return examRepository.findByCreatedById(userId)
-                .stream()
-                .map(examMapper::toExamResponse)
-                .collect(Collectors.toList());
-    }
-
-    @Transactional
-    public ExamDetailResponse getExamById(Long id) {
-        Exam exam = examRepository.findByIdBasic(id)
-            .orElseThrow(() -> new AppException(ErrorCode.EXAM_NOT_FOUND));
-
-        return buildExamDetailResponse(exam, false);
-    }
-
-    @Transactional
-    public ExamDetailResponse getPublishedExamById(Long id) {
-        Exam exam = examRepository.findByIdBasicAndStatus(id, ExamStatus.PUBLISHED)
-            .orElseThrow(() -> new AppException(ErrorCode.EXAM_NOT_PUBLISHED));
-
-        return buildExamDetailResponse(exam, true);
-    }
+    ExamDetailAssembler examDetailAssembler;
+    ExamDetailQueryService examDetailQueryService;
 
     @Transactional
     public ExamDetailResponse createExam(ExamRequest request) {
@@ -84,7 +51,7 @@ public class ExamService {
         exam.setCreatedBy(teacher);
         exam.setStatus(ExamStatus.DRAFT);
 
-        return toDetailResponse(examRepository.save(exam));
+        return examDetailAssembler.toTeacherDetailResponse(examRepository.save(exam));
     }
 
     @Transactional
@@ -93,7 +60,7 @@ public class ExamService {
         Exam exam = findAndVerifyOwnership(id, userId);
 
         examMapper.updateExam(request, exam);
-        return toDetailResponse(examRepository.save(exam));
+        return examDetailAssembler.toTeacherDetailResponse(examRepository.save(exam));
     }
 
     @Transactional
@@ -114,15 +81,36 @@ public class ExamService {
         }
 
         exam.setStatus(ExamStatus.PUBLISHED);
-        return toDetailResponse(examRepository.save(exam));
+        return examDetailAssembler.toTeacherDetailResponse(examRepository.save(exam));
     }
 
-    //---------------------------------------------------------------------//
+    @Transactional(readOnly = true)
+    public List<ExamResponse> getMyExams() {
+        Long userId = authService.getCurrentUserId();
+
+        return examRepository.findByCreatedById(userId)
+                .stream()
+                .map(examMapper::toExamResponse)
+                .collect(Collectors.toList());
+    }
+
+    @Transactional(readOnly = true)
+    public ExamDetailResponse getExamById(Long id) {
+        Long userId = authService.getCurrentUserId();
+        Exam exam = findAndVerifyOwnership(id, userId);
+        ExamDetailQueryData queryData = examDetailQueryService.loadExamDetailData(id);
+
+        return examDetailAssembler.toTeacherDetailResponse(
+                exam,
+                queryData.standaloneQuestions(),
+                queryData.passages(),
+                queryData.questionsByPassageId()
+        );
+    }
 
     @Transactional
     public PassageResponse createPassage(Long examId, PassageRequest request) {
         Long userId = authService.getCurrentUserId();
-
         Exam exam = findAndVerifyOwnership(examId, userId);
 
         Passage passage = examMapper.toPassage(request);
@@ -134,14 +122,13 @@ public class ExamService {
                 q.setExam(exam);
                 q.setPassage(passage);
                 attachOptions(q, qReq);
-
                 passage.getQuestions().add(q);
             });
         }
 
         exam.getPassages().add(passage);
 
-        return toPassageResponse(passageRepository.save(passage));
+        return examDetailAssembler.toTeacherPassageResponse(passageRepository.save(passage));
     }
 
     @Transactional
@@ -158,12 +145,11 @@ public class ExamService {
         Question question = examMapper.toQuestion(request);
         question.setExam(passage.getExam());
         question.setPassage(passage);
-
         attachOptions(question, request);
 
         passage.getQuestions().add(question);
 
-        return toQuestionResponse(questionRepository.save(question));
+        return examDetailAssembler.toTeacherQuestionResponse(questionRepository.save(question));
     }
 
     @Transactional
@@ -180,8 +166,6 @@ public class ExamService {
         passageRepository.delete(passage);
     }
 
-    //---------------------------------------------------------------------//
-
     @Transactional
     public QuestionResponse addQuestion(Long examId, QuestionRequest request) {
         Long userId = authService.getCurrentUserId();
@@ -192,7 +176,7 @@ public class ExamService {
         attachOptions(question, request);
 
         exam.getQuestions().add(question);
-        return toQuestionResponse(questionRepository.save(question));
+        return examDetailAssembler.toTeacherQuestionResponse(questionRepository.save(question));
     }
 
     @Transactional
@@ -210,7 +194,7 @@ public class ExamService {
         question.getOptions().clear();
         attachOptions(question, request);
 
-        return toQuestionResponse(questionRepository.save(question));
+        return examDetailAssembler.toTeacherQuestionResponse(questionRepository.save(question));
     }
 
     @Transactional
@@ -225,12 +209,8 @@ public class ExamService {
     }
 
     Exam findAndVerifyOwnership(Long id, Long userId) {
-        Exam exam = examRepository.findDetailById(id)
+        Exam exam = examRepository.findOwnedDetailById(id, userId)
                 .orElseThrow(() -> new AppException(ErrorCode.EXAM_NOT_FOUND));
-
-        if (!exam.getCreatedBy().getId().equals(userId)) {
-            throw new AppException(ErrorCode.UNAUTHORIZED);
-        }
 
         return exam;
     }
@@ -245,97 +225,4 @@ public class ExamService {
         }
     }
 
-    ExamDetailResponse buildExamDetailResponse(Exam exam, boolean hideAnswers) {
-        List<Question> standalone = questionRepository.findStandaloneQuestions(exam.getId());
-        List<Passage> passages = passageRepository.findPassages(exam.getId());
-
-        ExamDetailResponse response = examMapper.toDetailResponse(exam);
-        response.setQuestions(
-                standalone.stream()
-                        .map(question -> hideAnswers
-                                ? toStudentQuestionResponse(question)
-                                : toQuestionResponse(question))
-                        .collect(Collectors.toList())
-        );
-
-        response.setPassages(
-                passages.stream().map(passage -> {
-                    PassageResponse pr = new PassageResponse();
-                    pr.setId(passage.getId());
-                    pr.setContent(passage.getContent());
-
-                    List<Question> passageQuestions =
-                            questionRepository.findByPassageId(passage.getId());
-
-                    pr.setQuestions(
-                            passageQuestions.stream()
-                                    .map(question -> hideAnswers
-                                            ? toStudentQuestionResponse(question)
-                                            : toQuestionResponse(question))
-                                    .collect(Collectors.toList())
-                    );
-
-                    return pr;
-                }).collect(Collectors.toList())
-        );
-
-        return response;
-    }
-
-    ExamDetailResponse toDetailResponse(Exam exam) {
-        ExamDetailResponse response = examMapper.toDetailResponse(exam);
-        response.setQuestions(
-                exam.getQuestions().stream()
-                        .map(this::toQuestionResponse)
-                        .collect(Collectors.toList())
-        );
-
-        response.setPassages(
-                exam.getPassages().stream()
-                        .map(this::toPassageResponse)
-                        .collect(Collectors.toList())
-        );
-
-        return response;
-    }
-
-    PassageResponse toPassageResponse(Passage passage) {
-        PassageResponse res = examMapper.toPassageResponse(passage);
-
-        res.setQuestions(
-                passage.getQuestions().stream()
-                        .map(this::toQuestionResponse)
-                        .toList()
-        );
-
-        return res;
-    }
-
-    QuestionResponse toQuestionResponse(Question question) {
-        QuestionResponse qr = examMapper.toQuestionResponse(question);
-
-        boolean hasOptions =
-                question.getQuestionType() == QuestionType.MULTIPLE_CHOICE ||
-                question.getQuestionType() == QuestionType.TRUE_FALSE;
-
-        qr.setOptions(
-                hasOptions
-                        ? examMapper.toQuestionOptionResponseList(
-                            new ArrayList<>(question.getOptions())
-                        )
-                        : null
-        );
-
-        return qr;
-    }
-
-    QuestionResponse toStudentQuestionResponse(Question question) {
-        QuestionResponse qr = toQuestionResponse(question);
-
-        if (qr.getOptions() != null) {
-            qr.getOptions().forEach(option -> option.setIsCorrect(null));
-        }
-
-        return qr;
-    }
 }
