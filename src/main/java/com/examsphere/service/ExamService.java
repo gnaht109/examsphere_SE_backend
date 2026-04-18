@@ -1,5 +1,6 @@
 package com.examsphere.service;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -7,9 +8,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.examsphere.dto.request.ExamRequest;
+import com.examsphere.dto.request.PassageRequest;
 import com.examsphere.dto.request.QuestionRequest;
 import com.examsphere.dto.response.ExamDetailResponse;
 import com.examsphere.dto.response.ExamResponse;
+import com.examsphere.dto.response.PassageResponse;
 import com.examsphere.dto.response.QuestionResponse;
 import com.examsphere.enums.ExamStatus;
 import com.examsphere.enums.QuestionType;
@@ -17,12 +20,13 @@ import com.examsphere.exception.AppException;
 import com.examsphere.exception.ErrorCode;
 import com.examsphere.mapper.ExamMapper;
 import com.examsphere.model.Exam;
+import com.examsphere.model.Passage;
 import com.examsphere.model.Question;
 import com.examsphere.model.QuestionOption;
 import com.examsphere.model.User;
 import com.examsphere.repository.ExamRepository;
+import com.examsphere.repository.PassageRepository;
 import com.examsphere.repository.QuestionRepository;
-import com.examsphere.repository.UserRepository;
 
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
@@ -33,11 +37,12 @@ import lombok.experimental.FieldDefaults;
 public class ExamService {
 
     ExamRepository examRepository;
+    PassageRepository passageRepository;
     QuestionRepository questionRepository;
-    UserRepository userRepository;
     AuthService authService;
     ExamMapper examMapper;
 
+    @Transactional(readOnly = true)
     public List<ExamResponse> getPublishedExams() {
         return examRepository.findByStatus(ExamStatus.PUBLISHED)
                 .stream()
@@ -57,20 +62,18 @@ public class ExamService {
 
     @Transactional
     public ExamDetailResponse getExamById(Long id) {
-        Exam exam = examRepository.findDetailById(id)
-                .orElseThrow(() -> new AppException(ErrorCode.EXAM_NOT_FOUND));
-        List<Question> questions = questionRepository.findQuestionsWithOptions(id);
-        
-        ExamDetailResponse response = examMapper.toDetailResponse(exam);
-        
-        response.setQuestions(
-                questions.stream()
-                        .map(this::toQuestionResponse)
-                        .collect(Collectors.toList())
-        );
+        Exam exam = examRepository.findByIdBasic(id)
+            .orElseThrow(() -> new AppException(ErrorCode.EXAM_NOT_FOUND));
 
+        return buildExamDetailResponse(exam, false);
+    }
 
-        return toDetailResponse(exam);
+    @Transactional
+    public ExamDetailResponse getPublishedExamById(Long id) {
+        Exam exam = examRepository.findByIdBasicAndStatus(id, ExamStatus.PUBLISHED)
+            .orElseThrow(() -> new AppException(ErrorCode.EXAM_NOT_PUBLISHED));
+
+        return buildExamDetailResponse(exam, true);
     }
 
     @Transactional
@@ -81,10 +84,7 @@ public class ExamService {
         exam.setCreatedBy(teacher);
         exam.setStatus(ExamStatus.DRAFT);
 
-        System.out.println("1");
-
         return toDetailResponse(examRepository.save(exam));
-        
     }
 
     @Transactional
@@ -117,8 +117,73 @@ public class ExamService {
         return toDetailResponse(examRepository.save(exam));
     }
 
+    //---------------------------------------------------------------------//
+
     @Transactional
-    public ExamDetailResponse addQuestion(Long examId, QuestionRequest request) {
+    public PassageResponse createPassage(Long examId, PassageRequest request) {
+        Long userId = authService.getCurrentUserId();
+
+        Exam exam = findAndVerifyOwnership(examId, userId);
+
+        Passage passage = examMapper.toPassage(request);
+        passage.setExam(exam);
+
+        if (request.getQuestions() != null) {
+            request.getQuestions().forEach(qReq -> {
+                Question q = examMapper.toQuestion(qReq);
+                q.setExam(exam);
+                q.setPassage(passage);
+                attachOptions(q, qReq);
+
+                passage.getQuestions().add(q);
+            });
+        }
+
+        exam.getPassages().add(passage);
+
+        return toPassageResponse(passageRepository.save(passage));
+    }
+
+    @Transactional
+    public QuestionResponse addQuestionToPassage(Long passageId, QuestionRequest request) {
+        Long userId = authService.getCurrentUserId();
+
+        Passage passage = passageRepository.findById(passageId)
+                .orElseThrow(() -> new AppException(ErrorCode.PASSAGE_NOT_FOUND));
+
+        if (!passage.getExam().getCreatedBy().getId().equals(userId)) {
+            throw new AppException(ErrorCode.UNAUTHORIZED);
+        }
+
+        Question question = examMapper.toQuestion(request);
+        question.setExam(passage.getExam());
+        question.setPassage(passage);
+
+        attachOptions(question, request);
+
+        passage.getQuestions().add(question);
+
+        return toQuestionResponse(questionRepository.save(question));
+    }
+
+    @Transactional
+    public void deletePassage(Long passageId) {
+        Long userId = authService.getCurrentUserId();
+
+        Passage passage = passageRepository.findById(passageId)
+                .orElseThrow(() -> new AppException(ErrorCode.PASSAGE_NOT_FOUND));
+
+        if (!passage.getExam().getCreatedBy().getId().equals(userId)) {
+            throw new AppException(ErrorCode.UNAUTHORIZED);
+        }
+
+        passageRepository.delete(passage);
+    }
+
+    //---------------------------------------------------------------------//
+
+    @Transactional
+    public QuestionResponse addQuestion(Long examId, QuestionRequest request) {
         Long userId = authService.getCurrentUserId();
         Exam exam = findAndVerifyOwnership(examId, userId);
 
@@ -127,7 +192,7 @@ public class ExamService {
         attachOptions(question, request);
 
         exam.getQuestions().add(question);
-        return toDetailResponse(examRepository.save(exam));
+        return toQuestionResponse(questionRepository.save(question));
     }
 
     @Transactional
@@ -136,7 +201,6 @@ public class ExamService {
 
         if (!questionRepository.existsByIdAndExamCreatedById(questionId, userId)) {
             throw new AppException(ErrorCode.UNAUTHORIZED);
-            
         }
 
         Question question = questionRepository.findById(questionId)
@@ -160,7 +224,6 @@ public class ExamService {
         questionRepository.deleteById(questionId);
     }
 
-
     Exam findAndVerifyOwnership(Long id, Long userId) {
         Exam exam = examRepository.findDetailById(id)
                 .orElseThrow(() -> new AppException(ErrorCode.EXAM_NOT_FOUND));
@@ -182,6 +245,43 @@ public class ExamService {
         }
     }
 
+    ExamDetailResponse buildExamDetailResponse(Exam exam, boolean hideAnswers) {
+        List<Question> standalone = questionRepository.findStandaloneQuestions(exam.getId());
+        List<Passage> passages = passageRepository.findPassages(exam.getId());
+
+        ExamDetailResponse response = examMapper.toDetailResponse(exam);
+        response.setQuestions(
+                standalone.stream()
+                        .map(question -> hideAnswers
+                                ? toStudentQuestionResponse(question)
+                                : toQuestionResponse(question))
+                        .collect(Collectors.toList())
+        );
+
+        response.setPassages(
+                passages.stream().map(passage -> {
+                    PassageResponse pr = new PassageResponse();
+                    pr.setId(passage.getId());
+                    pr.setContent(passage.getContent());
+
+                    List<Question> passageQuestions =
+                            questionRepository.findByPassageId(passage.getId());
+
+                    pr.setQuestions(
+                            passageQuestions.stream()
+                                    .map(question -> hideAnswers
+                                            ? toStudentQuestionResponse(question)
+                                            : toQuestionResponse(question))
+                                    .collect(Collectors.toList())
+                    );
+
+                    return pr;
+                }).collect(Collectors.toList())
+        );
+
+        return response;
+    }
+
     ExamDetailResponse toDetailResponse(Exam exam) {
         ExamDetailResponse response = examMapper.toDetailResponse(exam);
         response.setQuestions(
@@ -189,7 +289,26 @@ public class ExamService {
                         .map(this::toQuestionResponse)
                         .collect(Collectors.toList())
         );
+
+        response.setPassages(
+                exam.getPassages().stream()
+                        .map(this::toPassageResponse)
+                        .collect(Collectors.toList())
+        );
+
         return response;
+    }
+
+    PassageResponse toPassageResponse(Passage passage) {
+        PassageResponse res = examMapper.toPassageResponse(passage);
+
+        res.setQuestions(
+                passage.getQuestions().stream()
+                        .map(this::toQuestionResponse)
+                        .toList()
+        );
+
+        return res;
     }
 
     QuestionResponse toQuestionResponse(Question question) {
@@ -201,9 +320,21 @@ public class ExamService {
 
         qr.setOptions(
                 hasOptions
-                        ? examMapper.toQuestionOptionResponseList(question.getOptions())
+                        ? examMapper.toQuestionOptionResponseList(
+                            new ArrayList<>(question.getOptions())
+                        )
                         : null
         );
+
+        return qr;
+    }
+
+    QuestionResponse toStudentQuestionResponse(Question question) {
+        QuestionResponse qr = toQuestionResponse(question);
+
+        if (qr.getOptions() != null) {
+            qr.getOptions().forEach(option -> option.setIsCorrect(null));
+        }
 
         return qr;
     }

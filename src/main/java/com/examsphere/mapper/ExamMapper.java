@@ -7,13 +7,16 @@ import org.mapstruct.Mapping;
 import org.mapstruct.MappingTarget;
 
 import com.examsphere.dto.request.ExamRequest;
+import com.examsphere.dto.request.PassageRequest;
 import com.examsphere.dto.request.QuestionOptionRequest;
 import com.examsphere.dto.request.QuestionRequest;
 import com.examsphere.dto.response.ExamDetailResponse;
 import com.examsphere.dto.response.ExamResponse;
+import com.examsphere.dto.response.PassageResponse;
 import com.examsphere.dto.response.QuestionOptionResponse;
 import com.examsphere.dto.response.QuestionResponse;
 import com.examsphere.model.Exam;
+import com.examsphere.model.Passage;
 import com.examsphere.model.Question;
 import com.examsphere.model.QuestionOption;
 
@@ -40,6 +43,16 @@ public interface ExamMapper {
     @Mapping(target = "updatedAt", ignore = true)
     void updateExam(ExamRequest request, @MappingTarget Exam exam);
 
+    // ── Passage ─────────────────────────────
+
+    @Mapping(target = "id", ignore = true)
+    @Mapping(target = "exam", ignore = true)
+    @Mapping(target = "questions", ignore = true)
+    Passage toPassage(PassageRequest request);
+
+    @Mapping(target = "questions", ignore = true)
+    PassageResponse toPassageResponse(Passage passage);
+
     // ─────────────────────────────────────────────
     // EXAM - LIST (ExamCard / lightweight)
     // ─────────────────────────────────────────────
@@ -57,6 +70,7 @@ public interface ExamMapper {
     @Mapping(target = "createdById", source = "createdBy.id")
     @Mapping(target = "createdByUsername", source = "createdBy.username")
     @Mapping(target = "questions", ignore = true) // handled in service
+    @Mapping(target = "passages", ignore = true) // handled in service
     ExamDetailResponse toDetailResponse(Exam exam);
 
     // ─────────────────────────────────────────────
