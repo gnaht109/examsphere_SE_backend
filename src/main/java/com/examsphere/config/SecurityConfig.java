@@ -23,6 +23,7 @@ public class SecurityConfig {
                 .requestMatchers("/api/auth/login", "/api/users/signup").permitAll()
 
                 //teacher endpoints
+                .requestMatchers("/api/admin/**").hasRole("ADMIN")
                 .requestMatchers("/api/teacher/**").hasRole("TEACHER")
                 .requestMatchers("/api/student/**").hasRole("STUDENT")
                 

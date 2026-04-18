@@ -20,155 +20,118 @@ import com.examsphere.dto.response.ExamDetailResponse;
 import com.examsphere.dto.response.ExamResponse;
 import com.examsphere.dto.response.PassageResponse;
 import com.examsphere.dto.response.QuestionResponse;
-import com.examsphere.service.ExamService;
+import com.examsphere.service.TeacherExamService;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 
-/**
- * ExamController — Teacher Side
- *
- * Auth note: teacher identity is currently passed via "X-User-Id" header.
- */
 @RestController
 @RequestMapping("/api/teacher")
 @CrossOrigin(origins = "http://localhost:5173")
 @RequiredArgsConstructor
 @FieldDefaults(level = lombok.AccessLevel.PRIVATE, makeFinal = true)
-public class ExamController {
+public class TeacherExamController {
 
-    ExamService examService;
+    TeacherExamService teacherExamService;
 
-    // ── Exam endpoints ────────────────────────────────────────────────────────
-
-    // GET /api/exams — STUDENT: list all published exams
-    @GetMapping("/exams")
-    ApiResponse<List<ExamResponse>> getPublishedExams() {
-        return ApiResponse.<List<ExamResponse>>builder()
-                .data(examService.getPublishedExams())
-                .build();
-    }
-
-    // GET /api/exams/my — TEACHER: list their own exams
     @GetMapping("/exams/my")
     ApiResponse<List<ExamResponse>> getMyExams() {
         return ApiResponse.<List<ExamResponse>>builder()
-                .data(examService.getMyExams())
+                .data(teacherExamService.getMyExams())
                 .build();
     }
 
-    // GET /api/exams/{id} — TEACHER/STUDENT: full exam with questions
-    // Student calls this when starting an exam, so it must be accessible to both roles (but only if exam is PUBLISHED)
     @GetMapping("/exams/{examId}")
     ApiResponse<ExamDetailResponse> getExamById(@PathVariable Long examId) {
         return ApiResponse.<ExamDetailResponse>builder()
-                .data(examService.getExamById(examId))
+                .data(teacherExamService.getExamById(examId))
                 .build();
     }
 
-    // POST /api/exams — TEACHER: create new exam (starts as DRAFT)
     @PostMapping("/exams")
-    ApiResponse<ExamDetailResponse> createExam(
-            @Valid @RequestBody ExamRequest request) {
+    ApiResponse<ExamDetailResponse> createExam(@Valid @RequestBody ExamRequest request) {
         return ApiResponse.<ExamDetailResponse>builder()
-                .data(examService.createExam(request))
+                .data(teacherExamService.createExam(request))
                 .build();
     }
 
-    // PUT /api/exams/{id} — TEACHER (owner): update exam metadata
     @PutMapping("/exams/{examId}")
     ApiResponse<ExamDetailResponse> updateExam(
             @PathVariable Long examId,
             @Valid @RequestBody ExamRequest request) {
         return ApiResponse.<ExamDetailResponse>builder()
-                .data(examService.updateExam(examId, request))
+                .data(teacherExamService.updateExam(examId, request))
                 .build();
     }
 
-    // DELETE /api/exams/{id} — TEACHER (owner): delete exam
     @DeleteMapping("/exams/{examId}")
-    ApiResponse<Void> deleteExam(
-            @PathVariable Long examId) {
-        examService.deleteExam(examId);
+    ApiResponse<Void> deleteExam(@PathVariable Long examId) {
+        teacherExamService.deleteExam(examId);
         return ApiResponse.<Void>builder()
                 .message("Exam deleted successfully")
                 .build();
     }
 
-    // PUT /api/exams/{id}/publish — TEACHER: publish a DRAFT exam
     @PutMapping("/exams/{examId}/publish")
-    ApiResponse<ExamDetailResponse> publishExam(
-            @PathVariable Long examId) {
+    ApiResponse<ExamDetailResponse> publishExam(@PathVariable Long examId) {
         return ApiResponse.<ExamDetailResponse>builder()
-                .data(examService.publishExam(examId))
+                .data(teacherExamService.publishExam(examId))
                 .build();
     }
 
-    // ── Question endpoints ────────────────────────────────────────────────────
-
-    // POST /api/exams/{examId}/questions — TEACHER: add question to exam
     @PostMapping("/exams/{examId}/questions")
     ApiResponse<QuestionResponse> addQuestion(
             @PathVariable Long examId,
             @Valid @RequestBody QuestionRequest request) {
         return ApiResponse.<QuestionResponse>builder()
-                .data(examService.addQuestion(examId, request))
+                .data(teacherExamService.addQuestion(examId, request))
                 .build();
     }
 
-    // PUT /api/questions/{questionId} — TEACHER: update a question
     @PutMapping("/exams/{examId}/questions/{questionId}")
     ApiResponse<QuestionResponse> updateQuestion(
             @PathVariable Long examId,
             @PathVariable Long questionId,
             @Valid @RequestBody QuestionRequest request) {
         return ApiResponse.<QuestionResponse>builder()
-                .data(examService.updateQuestion(questionId , request))
+                .data(teacherExamService.updateQuestion(questionId, request))
                 .build();
     }
 
-    // DELETE /api/questions/{id} — TEACHER: delete a question
     @DeleteMapping("/exams/{examId}/questions/{questionId}")
     ApiResponse<Void> deleteQuestion(
             @PathVariable Long examId,
-            @PathVariable Long questionId
-        ) {
-        examService.deleteQuestion(questionId);
+            @PathVariable Long questionId) {
+        teacherExamService.deleteQuestion(questionId);
         return ApiResponse.<Void>builder()
                 .message("Question deleted successfully")
                 .build();
     }
 
-    //PASSAGE------------------------------------------------//
-
     @PostMapping("/exams/{examId}/passages")
     ApiResponse<PassageResponse> createPassage(
-        @PathVariable Long examId,
-        @RequestBody PassageRequest request
-        ) {
-        examService.createPassage(examId, request);
+            @PathVariable Long examId,
+            @RequestBody PassageRequest request) {
         return ApiResponse.<PassageResponse>builder()
-                .message("Passage created successfully")
+                .data(teacherExamService.createPassage(examId, request))
                 .build();
     }
 
     @PostMapping("/passages/{passageId}/questions")
     ApiResponse<QuestionResponse> addQuestionToPassage(
-        @PathVariable Long passageId,
-        @RequestBody QuestionRequest request
-        ) {
-        examService.addQuestionToPassage(passageId, request);
+            @PathVariable Long passageId,
+            @RequestBody QuestionRequest request) {
         return ApiResponse.<QuestionResponse>builder()
-                .message("Question added to passage successfully")
+                .data(teacherExamService.addQuestionToPassage(passageId, request))
                 .build();
     }
 
     @DeleteMapping("/passages/{passageId}")
     ApiResponse<Void> deletePassage(@PathVariable Long passageId) {
-        examService.deletePassage(passageId);
+        teacherExamService.deletePassage(passageId);
         return ApiResponse.<Void>builder()
                 .message("Passage deleted successfully")
                 .build();
-        }
+    }
 }

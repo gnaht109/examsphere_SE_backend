@@ -1,5 +1,6 @@
 package com.examsphere.exception;
 
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -8,40 +9,42 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 
 import com.examsphere.dto.response.ApiResponse;
 
+import lombok.extern.slf4j.Slf4j;
+
 @ControllerAdvice
+@Slf4j
 public class GlobalExceptionHandler{
 
     @ExceptionHandler(value = Exception.class) 
-    ResponseEntity<ApiResponse> handlingRuntimeException(Exception ex) {
-        ex.printStackTrace(); // Log the actual exception
-        ApiResponse apiResponse = new ApiResponse();
+    ResponseEntity<ApiResponse<Void>> handlingRuntimeException(Exception ex) {
+        log.error("Unhandled exception", ex);
 
-        apiResponse.setCode(ErrorCode.UNCAUGHT_ERROR.getCode());
-        apiResponse.setMessage(ErrorCode.UNCAUGHT_ERROR.getMessage());
         return ResponseEntity
-                .badRequest()
-                .body(apiResponse);
+                .status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(ApiResponse.<Void>builder()
+                        .code(ErrorCode.UNCAUGHT_ERROR.getCode())
+                        .message(ErrorCode.UNCAUGHT_ERROR.getMessage())
+                        .build());
     }
 
     @ExceptionHandler(value = AppException.class) 
-    ResponseEntity<ApiResponse> handlingAppException(AppException ex) {
+    ResponseEntity<ApiResponse<Void>> handlingAppException(AppException ex) {
         ErrorCode errorCode = ex.getErrorCode();
-        ApiResponse apiResponse = new ApiResponse();
 
-        apiResponse.setCode(errorCode.getCode());
-        apiResponse.setMessage(errorCode.getMessage());
-        
         return ResponseEntity
                 .status(errorCode.getStatusCode())
-                .body(apiResponse);
+                .body(ApiResponse.<Void>builder()
+                        .code(errorCode.getCode())
+                        .message(errorCode.getMessage())
+                        .build());
     }
 
     @ExceptionHandler(value = AccessDeniedException.class)
-    ResponseEntity<ApiResponse> handlingAccessDeniedException(AccessDeniedException ex) {
+    ResponseEntity<ApiResponse<Void>> handlingAccessDeniedException(AccessDeniedException ex) {
         ErrorCode errorCode = ErrorCode.UNAUTHORIZED;
 
         return ResponseEntity.status(errorCode.getStatusCode()).body(
-                ApiResponse.builder()
+                ApiResponse.<Void>builder()
                     .code(errorCode.getCode())
                     .message(errorCode.getMessage())
                     .build()
@@ -49,9 +52,16 @@ public class GlobalExceptionHandler{
     }
 
     @ExceptionHandler(value = MethodArgumentNotValidException.class) 
-    ResponseEntity<String> handlingValidation(MethodArgumentNotValidException ex) {
+    ResponseEntity<ApiResponse<Void>> handlingValidation(MethodArgumentNotValidException ex) {
+        String message = ex.getFieldError() != null
+                ? ex.getFieldError().getDefaultMessage()
+                : ErrorCode.INVALID_INPUT.getMessage();
+
         return ResponseEntity
                 .badRequest()
-                .body(ex.getFieldError().getDefaultMessage());
+                .body(ApiResponse.<Void>builder()
+                        .code(ErrorCode.INVALID_INPUT.getCode())
+                        .message(message)
+                        .build());
     }
 }

@@ -31,6 +31,13 @@ public interface QuestionRepository extends JpaRepository<Question, Long> {
     @Query("""
         SELECT q FROM Question q
         LEFT JOIN FETCH q.options
+        WHERE q.passage.exam.id = :examId
+    """)
+    List<Question> findPassageQuestionsByExamId(Long examId);
+
+    @Query("""
+        SELECT q FROM Question q
+        LEFT JOIN FETCH q.options
         WHERE q.passage.id = :passageId
     """)
     List<Question> findByPassageId(Long passageId);

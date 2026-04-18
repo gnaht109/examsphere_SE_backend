@@ -43,6 +43,14 @@ public interface ExamRepository extends JpaRepository<Exam, Long> {
     Optional<Exam> findDetailById( Long id);
 
     @Query("""
+        SELECT DISTINCT e FROM Exam e
+        JOIN FETCH e.createdBy
+        LEFT JOIN FETCH e.questions
+        WHERE e.id = :id AND e.createdBy.id = :userId
+    """)
+    Optional<Exam> findOwnedDetailById(Long id, Long userId);
+
+    @Query("""
         SELECT e FROM Exam e
         JOIN FETCH e.createdBy
         WHERE e.createdBy.id = :userId

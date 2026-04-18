@@ -3,8 +3,10 @@ package com.examsphere.service;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
-import com.examsphere.dto.request.UserCreationRequest;
+import com.examsphere.dto.request.StudentSignupRequest;
+import com.examsphere.dto.request.TeacherCreationRequest;
 import com.examsphere.dto.response.UserResponse;
+import com.examsphere.enums.UserRole;
 import com.examsphere.exception.AppException;
 import com.examsphere.exception.ErrorCode;
 import com.examsphere.mapper.UserMapper;
@@ -25,16 +27,25 @@ public class UserService {
     UserMapper userMapper;
     PasswordEncoder passwordEncoder;
 
-    //Sign up login
-    public UserResponse createUser(UserCreationRequest request) {
-        if(userRepository.existsByEmail(request.getEmail())) {
+    public UserResponse createStudent(StudentSignupRequest request) {
+        User user = userMapper.toUser(request);
+        return saveUserWithRole(user, request.getPassword(), UserRole.STUDENT);
+    }
+
+    public UserResponse createTeacher(TeacherCreationRequest request) {
+        User user = userMapper.toUser(request);
+        return saveUserWithRole(user, request.getPassword(), UserRole.TEACHER);
+    }
+
+    UserResponse saveUserWithRole(User user, String rawPassword, UserRole role) {
+        if(userRepository.existsByEmail(user.getEmail())) {
             throw new AppException(ErrorCode.EMAIL_EXISTED);
         }
-        if(userRepository.existsByUsername(request.getUsername())) {
+        if(userRepository.existsByUsername(user.getUsername())) {
             throw new AppException(ErrorCode.USER_EXISTED);
         }
-        User user = userMapper.toUser(request);
-        user.setPassword(passwordEncoder.encode(request.getPassword()));
+        user.setRole(role);
+        user.setPassword(passwordEncoder.encode(rawPassword));
 
         return userMapper.toUserResponse(userRepository.save(user));
     }
