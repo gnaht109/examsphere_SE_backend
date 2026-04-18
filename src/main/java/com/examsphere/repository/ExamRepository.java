@@ -14,6 +14,12 @@ import com.examsphere.model.Exam;
 public interface ExamRepository extends JpaRepository<Exam, Long> {
 
     // GET /api/exams — students see only PUBLISHED exams
+    @Query("""
+        SELECT DISTINCT e FROM Exam e
+        JOIN FETCH e.createdBy
+        LEFT JOIN FETCH e.questions
+        WHERE e.status = :status
+    """)
     List<Exam> findByStatus(ExamStatus status);
 
     // GET /api/exams/my — teacher sees their own exams (all statuses)

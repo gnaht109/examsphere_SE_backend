@@ -27,7 +27,6 @@ import com.examsphere.model.User;
 import com.examsphere.repository.ExamRepository;
 import com.examsphere.repository.PassageRepository;
 import com.examsphere.repository.QuestionRepository;
-import com.examsphere.repository.UserRepository;
 
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
@@ -40,10 +39,10 @@ public class ExamService {
     ExamRepository examRepository;
     PassageRepository passageRepository;
     QuestionRepository questionRepository;
-    UserRepository userRepository;
     AuthService authService;
     ExamMapper examMapper;
 
+    @Transactional(readOnly = true)
     public List<ExamResponse> getPublishedExams() {
         return examRepository.findByStatus(ExamStatus.PUBLISHED)
                 .stream()

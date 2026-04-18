@@ -27,6 +27,7 @@ public class StudentExamController {
 
     @GetMapping("/exams")
     ApiResponse<List<ExamResponse>> getPublishedExams() {
+        System.out.println("Fetching published exams for student...");
         return ApiResponse.<List<ExamResponse>>builder()
                 .data(examService.getPublishedExams())
                 .build();
@@ -34,6 +35,7 @@ public class StudentExamController {
 
     @GetMapping("/exams/{examId}")
     ApiResponse<ExamDetailResponse> getPublishedExamById(@PathVariable Long examId) {
+        System.out.println("Fetching published exam details for examId: " + examId);
         return ApiResponse.<ExamDetailResponse>builder()
                 .data(examService.getPublishedExamById(examId))
                 .build();
