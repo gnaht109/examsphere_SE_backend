@@ -11,13 +11,13 @@ import com.examsphere.model.Question;
 @Repository
 public interface QuestionRepository extends JpaRepository<Question, Long> {
 
-    // Ownership guard: question must belong to an exam owned by this teacher
     boolean existsByIdAndExamCreatedById(Long questionId, Long userId);
 
     @Query("""
         SELECT q FROM Question q
         LEFT JOIN FETCH q.options
         WHERE q.exam.id = :examId
+        ORDER BY CASE WHEN q.questionOrder IS NULL THEN 1 ELSE 0 END, q.questionOrder, q.id
     """)
     List<Question> findQuestionsWithOptions(Long examId);
 
@@ -25,6 +25,7 @@ public interface QuestionRepository extends JpaRepository<Question, Long> {
         SELECT q FROM Question q
         LEFT JOIN FETCH q.options
         WHERE q.exam.id = :examId AND q.passage IS NULL
+        ORDER BY CASE WHEN q.questionOrder IS NULL THEN 1 ELSE 0 END, q.questionOrder, q.id
     """)
     List<Question> findStandaloneQuestions(Long examId);
 
@@ -32,6 +33,10 @@ public interface QuestionRepository extends JpaRepository<Question, Long> {
         SELECT q FROM Question q
         LEFT JOIN FETCH q.options
         WHERE q.passage.exam.id = :examId
+        ORDER BY q.passage.id,
+                 CASE WHEN q.questionOrder IS NULL THEN 1 ELSE 0 END,
+                 q.questionOrder,
+                 q.id
     """)
     List<Question> findPassageQuestionsByExamId(Long examId);
 
@@ -39,6 +44,7 @@ public interface QuestionRepository extends JpaRepository<Question, Long> {
         SELECT q FROM Question q
         LEFT JOIN FETCH q.options
         WHERE q.passage.id = :passageId
+        ORDER BY CASE WHEN q.questionOrder IS NULL THEN 1 ELSE 0 END, q.questionOrder, q.id
     """)
     List<Question> findByPassageId(Long passageId);
 }

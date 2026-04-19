@@ -2,6 +2,7 @@ package com.examsphere.assembler;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 
@@ -45,12 +46,12 @@ public class ExamDetailAssembler {
     public ExamDetailResponse toTeacherDetailResponse(Exam exam) {
         ExamDetailResponse response = examMapper.toDetailResponse(exam);
         response.setQuestions(
-                exam.getQuestions().stream()
+                sortQuestions(exam.getQuestions()).stream()
                         .map(this::toTeacherQuestionResponse)
                         .toList()
         );
         response.setPassages(
-                exam.getPassages().stream()
+                sortPassages(exam.getPassages()).stream()
                         .map(this::toTeacherPassageResponse)
                         .toList()
         );
@@ -58,7 +59,7 @@ public class ExamDetailAssembler {
     }
 
     public PassageResponse toTeacherPassageResponse(Passage passage) {
-        return toPassageResponse(passage, passage.getQuestions(), false);
+        return toPassageResponse(passage, sortQuestions(passage.getQuestions()), false);
     }
 
     public QuestionResponse toTeacherQuestionResponse(Question question) {
@@ -73,15 +74,15 @@ public class ExamDetailAssembler {
             boolean hideAnswers) {
         ExamDetailResponse response = examMapper.toDetailResponse(exam);
         response.setQuestions(
-                standaloneQuestions.stream()
+                sortQuestions(standaloneQuestions).stream()
                         .map(question -> toQuestionResponse(question, hideAnswers))
                         .toList()
         );
         response.setPassages(
-                passages.stream()
+                sortPassages(passages).stream()
                         .map(passage -> toPassageResponse(
                                 passage,
-                                questionsByPassageId.getOrDefault(passage.getId(), Collections.emptyList()),
+                                sortQuestions(questionsByPassageId.getOrDefault(passage.getId(), Collections.emptyList())),
                                 hideAnswers))
                         .toList()
         );
@@ -119,5 +120,23 @@ public class ExamDetailAssembler {
         }
 
         return response;
+    }
+
+    List<Question> sortQuestions(List<Question> questions) {
+        return questions.stream()
+                .sorted(Comparator
+                        .comparing((Question question) -> question.getQuestionOrder() == null ? 1 : 0)
+                        .thenComparing(question -> question.getQuestionOrder(), Comparator.nullsLast(Integer::compareTo))
+                        .thenComparing(Question::getId, Comparator.nullsLast(Long::compareTo)))
+                .toList();
+    }
+
+    List<Passage> sortPassages(List<Passage> passages) {
+        return passages.stream()
+                .sorted(Comparator
+                        .comparing((Passage passage) -> passage.getPassageOrder() == null ? 1 : 0)
+                        .thenComparing(passage -> passage.getPassageOrder(), Comparator.nullsLast(Integer::compareTo))
+                        .thenComparing(Passage::getId, Comparator.nullsLast(Long::compareTo)))
+                .toList();
     }
 }

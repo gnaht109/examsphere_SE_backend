@@ -23,10 +23,6 @@ import com.examsphere.model.QuestionOption;
 @Mapper(componentModel = "spring")
 public interface ExamMapper {
 
-    // ─────────────────────────────────────────────
-    // EXAM - CREATE / UPDATE
-    // ─────────────────────────────────────────────
-
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "createdBy", ignore = true)
     @Mapping(target = "questions", ignore = true)
@@ -43,8 +39,6 @@ public interface ExamMapper {
     @Mapping(target = "updatedAt", ignore = true)
     void updateExam(ExamRequest request, @MappingTarget Exam exam);
 
-    // ── Passage ─────────────────────────────
-
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "exam", ignore = true)
     @Mapping(target = "questions", ignore = true)
@@ -53,9 +47,10 @@ public interface ExamMapper {
     @Mapping(target = "questions", ignore = true)
     PassageResponse toPassageResponse(Passage passage);
 
-    // ─────────────────────────────────────────────
-    // EXAM - LIST (ExamCard / lightweight)
-    // ─────────────────────────────────────────────
+    @Mapping(target = "id", ignore = true)
+    @Mapping(target = "exam", ignore = true)
+    @Mapping(target = "questions", ignore = true)
+    void updatePassage(PassageRequest request, @MappingTarget Passage passage);
 
     @Mapping(target = "createdById", source = "createdBy.id")
     @Mapping(target = "createdByUsername", source = "createdBy.username")
@@ -63,36 +58,24 @@ public interface ExamMapper {
             expression = "java(exam.getQuestions() != null ? exam.getQuestions().size() : 0)")
     ExamResponse toExamResponse(Exam exam);
 
-    // ─────────────────────────────────────────────
-    // EXAM - DETAIL (EditExamPage)
-    // ─────────────────────────────────────────────
-
     @Mapping(target = "createdById", source = "createdBy.id")
     @Mapping(target = "createdByUsername", source = "createdBy.username")
-    @Mapping(target = "questions", ignore = true) // handled in service
-    @Mapping(target = "passages", ignore = true) // handled in service
+    @Mapping(target = "questions", ignore = true)
+    @Mapping(target = "passages", ignore = true)
     ExamDetailResponse toDetailResponse(Exam exam);
-
-    // ─────────────────────────────────────────────
-    // QUESTION
-    // ─────────────────────────────────────────────
 
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "exam", ignore = true)
     @Mapping(target = "options", ignore = true)
     Question toQuestion(QuestionRequest request);
 
-    @Mapping(target = "options", ignore = true) // handled in service
+    @Mapping(target = "options", ignore = true)
     QuestionResponse toQuestionResponse(Question question);
 
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "exam", ignore = true)
     @Mapping(target = "options", ignore = true)
     void updateQuestion(QuestionRequest request, @MappingTarget Question question);
-
-    // ─────────────────────────────────────────────
-    // QUESTION OPTION
-    // ─────────────────────────────────────────────
 
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "question", ignore = true)

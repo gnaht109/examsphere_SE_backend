@@ -39,7 +39,7 @@ public class Passage {
     @Column(columnDefinition = "TEXT")
     String content;
 
-    // ── Relationship ─────────────────────────────
+    Integer passageOrder;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "exam_id")

@@ -112,16 +112,25 @@ public class TeacherExamController {
     @PostMapping("/exams/{examId}/passages")
     ApiResponse<PassageResponse> createPassage(
             @PathVariable Long examId,
-            @RequestBody PassageRequest request) {
+            @Valid @RequestBody PassageRequest request) {
         return ApiResponse.<PassageResponse>builder()
                 .data(teacherExamService.createPassage(examId, request))
+                .build();
+    }
+
+    @PutMapping("/passages/{passageId}")
+    ApiResponse<PassageResponse> updatePassage(
+            @PathVariable Long passageId,
+            @Valid @RequestBody PassageRequest request) {
+        return ApiResponse.<PassageResponse>builder()
+                .data(teacherExamService.updatePassage(passageId, request))
                 .build();
     }
 
     @PostMapping("/passages/{passageId}/questions")
     ApiResponse<QuestionResponse> addQuestionToPassage(
             @PathVariable Long passageId,
-            @RequestBody QuestionRequest request) {
+            @Valid @RequestBody QuestionRequest request) {
         return ApiResponse.<QuestionResponse>builder()
                 .data(teacherExamService.addQuestionToPassage(passageId, request))
                 .build();
