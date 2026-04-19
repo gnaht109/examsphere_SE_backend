@@ -132,6 +132,21 @@ public class TeacherExamService {
     }
 
     @Transactional
+    public PassageResponse updatePassage(Long passageId, PassageRequest request) {
+        Long userId = authService.getCurrentUserId();
+
+        Passage passage = passageRepository.findById(passageId)
+                .orElseThrow(() -> new AppException(ErrorCode.PASSAGE_NOT_FOUND));
+
+        if (!passage.getExam().getCreatedBy().getId().equals(userId)) {
+            throw new AppException(ErrorCode.UNAUTHORIZED);
+        }
+
+        examMapper.updatePassage(request, passage);
+        return examDetailAssembler.toTeacherPassageResponse(passageRepository.save(passage));
+    }
+
+    @Transactional
     public QuestionResponse addQuestionToPassage(Long passageId, QuestionRequest request) {
         Long userId = authService.getCurrentUserId();
 
@@ -209,10 +224,8 @@ public class TeacherExamService {
     }
 
     Exam findAndVerifyOwnership(Long id, Long userId) {
-        Exam exam = examRepository.findOwnedDetailById(id, userId)
+        return examRepository.findOwnedDetailById(id, userId)
                 .orElseThrow(() -> new AppException(ErrorCode.EXAM_NOT_FOUND));
-
-        return exam;
     }
 
     void attachOptions(Question question, QuestionRequest request) {
@@ -224,5 +237,4 @@ public class TeacherExamService {
             });
         }
     }
-
 }
