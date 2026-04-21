@@ -21,6 +21,7 @@ public class ExamResponse {
     String title;
     String description;
     Integer duration;
+    Double totalScore;
     ExamStatus status;
 
     // Teacher info

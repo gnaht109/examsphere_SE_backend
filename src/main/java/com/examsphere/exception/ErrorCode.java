@@ -23,9 +23,11 @@ public enum ErrorCode {
     EXAM_ALREADY_CLOSED(2002, "Exam is already closed", HttpStatus.BAD_REQUEST),
     EXAM_NOT_PUBLISHED(2003, "Exam is not published yet", HttpStatus.BAD_REQUEST),
     EXAM_CANNOT_PUBLISH_EMPTY(2004, "Cannot publish an exam with no questions", HttpStatus.BAD_REQUEST),
+    EXAM_INVALID_TOTAL_SCORE(2005, "Exam question points must match the total score", HttpStatus.BAD_REQUEST),
     
     // Question — 3000s
     QUESTION_NOT_FOUND(3001, "Question not found", HttpStatus.NOT_FOUND),
+    QUESTION_OPTION_NOT_FOUND(3002, "Question option not found", HttpStatus.NOT_FOUND),
 
     // Passage -- 3500s
     PASSAGE_NOT_FOUND(3501, "Passage not found", HttpStatus.NOT_FOUND),
@@ -34,6 +36,8 @@ public enum ErrorCode {
     SUBMISSION_NOT_FOUND(4001, "Submission not found", HttpStatus.NOT_FOUND),
     SUBMISSION_ALREADY_SUBMITTED(4002, "Exam already submitted", HttpStatus.BAD_REQUEST),
     SUBMISSION_EXPIRED(4003, "Exam time has expired", HttpStatus.BAD_REQUEST),
+    ATTEMPT_NOT_FOUND(4004, "Attempt not found", HttpStatus.NOT_FOUND),
+    ATTEMPT_NOT_FINISHED(4005, "Attempt is still in progress", HttpStatus.BAD_REQUEST),
 
     // Result — 5000s
     RESULT_NOT_FOUND(5001, "Result not found", HttpStatus.NOT_FOUND),

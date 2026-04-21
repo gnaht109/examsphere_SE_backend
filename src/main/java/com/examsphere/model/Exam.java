@@ -48,6 +48,9 @@ public class Exam {
 
     String description;
 
+    @Builder.Default
+    Double totalScore = 100.0;
+
     @Enumerated(EnumType.STRING)
     @Builder.Default
     ExamStatus status = ExamStatus.DRAFT;
