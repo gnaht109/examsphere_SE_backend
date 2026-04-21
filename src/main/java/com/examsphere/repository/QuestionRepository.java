@@ -13,6 +13,15 @@ public interface QuestionRepository extends JpaRepository<Question, Long> {
 
     boolean existsByIdAndExamCreatedById(Long questionId, Long userId);
 
+    long countByExamId(Long examId);
+
+    @Query("""
+        SELECT q FROM Question q
+        LEFT JOIN FETCH q.options
+        WHERE q.id = :questionId AND q.exam.id = :examId
+    """)
+    java.util.Optional<Question> findByIdAndExamIdWithOptions(Long questionId, Long examId);
+
     @Query("""
         SELECT q FROM Question q
         LEFT JOIN FETCH q.options

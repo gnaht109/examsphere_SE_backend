@@ -26,8 +26,7 @@ public class QuestionRequest {
     String content;
 
     @Positive(message = "Points must be positive")
-    @Builder.Default
-    Double points = 1.0;
+    Double points;
 
     @NotNull(message = "Question type must not be null")
     @JsonProperty("type")

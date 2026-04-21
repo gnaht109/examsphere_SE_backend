@@ -1,5 +1,6 @@
 package com.examsphere.service;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -49,6 +50,7 @@ public class TeacherExamService {
 
         Exam exam = examMapper.toExam(request);
         exam.setCreatedBy(teacher);
+        exam.setTotalScore(request.getTotalScore() != null ? request.getTotalScore() : 100.0);
         exam.setStatus(ExamStatus.DRAFT);
 
         return examDetailAssembler.toTeacherDetailResponse(examRepository.save(exam));
@@ -58,9 +60,15 @@ public class TeacherExamService {
     public ExamDetailResponse updateExam(Long id, ExamRequest request) {
         Long userId = authService.getCurrentUserId();
         Exam exam = findAndVerifyOwnership(id, userId);
+        Double currentTotalScore = exam.getTotalScore();
 
         examMapper.updateExam(request, exam);
-        return examDetailAssembler.toTeacherDetailResponse(examRepository.save(exam));
+        if (request.getTotalScore() == null) {
+            exam.setTotalScore(currentTotalScore);
+        }
+        Exam savedExam = examRepository.save(exam);
+        applyDefaultPoints(savedExam);
+        return examDetailAssembler.toTeacherDetailResponse(savedExam);
     }
 
     @Transactional
@@ -75,10 +83,14 @@ public class TeacherExamService {
     public ExamDetailResponse publishExam(Long id) {
         Long userId = authService.getCurrentUserId();
         Exam exam = findAndVerifyOwnership(id, userId);
+        List<Question> allQuestions = questionRepository.findQuestionsWithOptions(id);
 
-        if (exam.getQuestions().isEmpty()) {
+        if (allQuestions.isEmpty()) {
             throw new AppException(ErrorCode.EXAM_CANNOT_PUBLISH_EMPTY);
         }
+
+        applyDefaultPoints(exam);
+        validateTotalPoints(exam, questionRepository.findQuestionsWithOptions(id));
 
         exam.setStatus(ExamStatus.PUBLISHED);
         return examDetailAssembler.toTeacherDetailResponse(examRepository.save(exam));
@@ -128,7 +140,9 @@ public class TeacherExamService {
 
         exam.getPassages().add(passage);
 
-        return examDetailAssembler.toTeacherPassageResponse(passageRepository.save(passage));
+        Passage savedPassage = passageRepository.save(passage);
+        applyDefaultPoints(exam);
+        return examDetailAssembler.toTeacherPassageResponse(savedPassage);
     }
 
     @Transactional
@@ -164,7 +178,9 @@ public class TeacherExamService {
 
         passage.getQuestions().add(question);
 
-        return examDetailAssembler.toTeacherQuestionResponse(questionRepository.save(question));
+        Question savedQuestion = questionRepository.save(question);
+        applyDefaultPoints(passage.getExam());
+        return examDetailAssembler.toTeacherQuestionResponse(savedQuestion);
     }
 
     @Transactional
@@ -191,7 +207,9 @@ public class TeacherExamService {
         attachOptions(question, request);
 
         exam.getQuestions().add(question);
-        return examDetailAssembler.toTeacherQuestionResponse(questionRepository.save(question));
+        Question savedQuestion = questionRepository.save(question);
+        applyDefaultPoints(exam);
+        return examDetailAssembler.toTeacherQuestionResponse(savedQuestion);
     }
 
     @Transactional
@@ -206,10 +224,16 @@ public class TeacherExamService {
                 .orElseThrow(() -> new AppException(ErrorCode.QUESTION_NOT_FOUND));
 
         examMapper.updateQuestion(request, question);
-        question.getOptions().clear();
-        attachOptions(question, request);
 
-        return examDetailAssembler.toTeacherQuestionResponse(questionRepository.save(question));
+        // Preserve existing option identities for reorder-only updates so attempt answers remain valid.
+        if (request.getOptions() != null) {
+            question.getOptions().clear();
+            attachOptions(question, request);
+        }
+
+        Question savedQuestion = questionRepository.save(question);
+        applyDefaultPoints(savedQuestion.getExam());
+        return examDetailAssembler.toTeacherQuestionResponse(savedQuestion);
     }
 
     @Transactional
@@ -236,5 +260,60 @@ public class TeacherExamService {
                 question.getOptions().add(option);
             });
         }
+    }
+
+    void applyDefaultPoints(Exam exam) {
+        List<Question> allQuestions = questionRepository.findQuestionsWithOptions(exam.getId());
+        if (allQuestions.isEmpty()) {
+            return;
+        }
+
+        double totalScore = exam.getTotalScore() != null ? exam.getTotalScore() : 100.0;
+        List<Question> missingPoints = allQuestions.stream()
+                .filter(question -> question.getPoints() == null)
+                .toList();
+
+        double assignedPoints = allQuestions.stream()
+                .filter(question -> question.getPoints() != null)
+                .mapToDouble(Question::getPoints)
+                .sum();
+
+        if (missingPoints.isEmpty()) {
+            return;
+        }
+
+        double remainingPoints = totalScore - assignedPoints;
+        if (remainingPoints <= 0) {
+            throw new AppException(ErrorCode.EXAM_INVALID_TOTAL_SCORE);
+        }
+
+        List<Question> mutableMissingPoints = new ArrayList<>(missingPoints);
+        double distributedPoints = 0.0;
+        for (int i = 0; i < mutableMissingPoints.size(); i++) {
+            Question question = mutableMissingPoints.get(i);
+            double points = i == mutableMissingPoints.size() - 1
+                    ? roundPoints(remainingPoints - distributedPoints)
+                    : roundPoints(remainingPoints / mutableMissingPoints.size());
+
+            question.setPoints(points);
+            distributedPoints += points;
+        }
+    }
+
+    void validateTotalPoints(Exam exam, List<Question> allQuestions) {
+        double totalPoints = allQuestions.stream()
+                .map(Question::getPoints)
+                .filter(points -> points != null)
+                .mapToDouble(Double::doubleValue)
+                .sum();
+
+        double expectedPoints = exam.getTotalScore() != null ? exam.getTotalScore() : 100.0;
+        if (Math.abs(totalPoints - expectedPoints) > 0.01d) {
+            throw new AppException(ErrorCode.EXAM_INVALID_TOTAL_SCORE);
+        }
+    }
+
+    double roundPoints(double points) {
+        return Math.round(points * 100.0d) / 100.0d;
     }
 }
