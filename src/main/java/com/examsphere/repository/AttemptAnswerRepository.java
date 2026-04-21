@@ -14,6 +14,8 @@ public interface AttemptAnswerRepository extends JpaRepository<AttemptAnswer, Lo
 
     void deleteByAttemptId(Long attemptId);
 
+    void deleteByAttemptIdIn(List<Long> attemptIds);
+
     List<AttemptAnswer> findByAttemptId(Long attemptId);
 
     Optional<AttemptAnswer> findByAttemptIdAndQuestionId(Long attemptId, Long questionId);

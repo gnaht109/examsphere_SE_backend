@@ -5,8 +5,6 @@ import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
-
-import com.examsphere.enums.AttemptStatus;
 import com.examsphere.model.Attempt;
 
 @Repository
@@ -18,7 +16,7 @@ public interface AttemptRepository extends JpaRepository<Attempt, Long> {
 
     List<Attempt> findByStudentId(Long studentId);
 
-    List<Attempt> findByExamId(Long examId);
+    List<Attempt> findByStudentIdOrderByStartedAtDescIdDesc(Long studentId);
 
-    Optional<Attempt> findByExamIdAndStudentIdAndStatus(Long examId, Long studentId, AttemptStatus status);
+    List<Attempt> findByExamId(Long examId);
 }

@@ -13,6 +13,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.examsphere.dto.request.AttemptAnswerRequest;
 import com.examsphere.dto.response.AttemptAnswerResponse;
+import com.examsphere.dto.response.AttemptQuestionOptionResultResponse;
 import com.examsphere.dto.response.AttemptQuestionResultResponse;
 import com.examsphere.dto.response.AttemptResponse;
 import com.examsphere.dto.response.AttemptResultResponse;
@@ -51,8 +52,7 @@ public class StudentAttemptService {
         Exam exam = examRepository.findByIdBasicAndStatus(examId, ExamStatus.PUBLISHED)
                 .orElseThrow(() -> new AppException(ErrorCode.EXAM_NOT_PUBLISHED));
 
-        List<Attempt> existingAttempts = attemptRepository
-                .findAllByExamIdAndStudentIdOrderByStartedAtDescIdDesc(examId, student.getId());
+        List<Attempt> existingAttempts = retainLatestAttempt(examId, student.getId());
 
         if (existingAttempts.isEmpty()) {
             return createNewAttempt(exam, student);
@@ -91,6 +91,17 @@ public class StudentAttemptService {
         Attempt attempt = findOwnedAttempt(attemptId, studentId);
         finalizeIfExpired(attempt);
         return toAttemptResponse(attempt);
+    }
+
+    @Transactional
+    public List<AttemptResponse> getAttempts(AttemptStatus status) {
+        Long studentId = authService.getCurrentUserId();
+        List<Attempt> attempts = retainLatestAttempts(studentId);
+
+        return attempts.stream()
+                .filter(attempt -> status == null || attempt.getStatus() == status)
+                .map(this::toAttemptResponse)
+                .toList();
     }
 
     @Transactional
@@ -186,8 +197,46 @@ public class StudentAttemptService {
     }
 
     Attempt findOwnedAttempt(Long attemptId, Long studentId) {
+        retainLatestAttempts(studentId);
         return attemptRepository.findByIdAndStudentId(attemptId, studentId)
                 .orElseThrow(() -> new AppException(ErrorCode.ATTEMPT_NOT_FOUND));
+    }
+
+    List<Attempt> retainLatestAttempt(Long examId, Long studentId) {
+        List<Attempt> attempts = attemptRepository.findAllByExamIdAndStudentIdOrderByStartedAtDescIdDesc(examId, studentId);
+        return retainLatestPerExam(attempts);
+    }
+
+    List<Attempt> retainLatestAttempts(Long studentId) {
+        List<Attempt> attempts = attemptRepository.findByStudentIdOrderByStartedAtDescIdDesc(studentId);
+        return retainLatestPerExam(attempts);
+    }
+
+    List<Attempt> retainLatestPerExam(List<Attempt> attempts) {
+        if (attempts.isEmpty()) {
+            return attempts;
+        }
+
+        Map<Long, List<Attempt>> attemptsByExamId = attempts.stream()
+                .collect(Collectors.groupingBy(attempt -> attempt.getExam().getId()));
+
+        List<Long> obsoleteAttemptIds = attemptsByExamId.values().stream()
+                .flatMap(group -> group.stream().skip(1))
+                .map(Attempt::getId)
+                .toList();
+
+        if (!obsoleteAttemptIds.isEmpty()) {
+            attemptAnswerRepository.deleteByAttemptIdIn(obsoleteAttemptIds);
+            attemptRepository.deleteAllById(obsoleteAttemptIds);
+        }
+
+        return attemptsByExamId.values().stream()
+                .map(group -> group.get(0))
+                .peek(this::finalizeIfExpired)
+                .sorted(Comparator
+                        .comparing(Attempt::getStartedAt, Comparator.nullsLast(Comparator.reverseOrder()))
+                        .thenComparing(Attempt::getId, Comparator.nullsLast(Comparator.reverseOrder())))
+                .toList();
     }
 
     void finalizeIfExpired(Attempt attempt) {
@@ -268,9 +317,11 @@ public class StudentAttemptService {
         return AttemptResponse.builder()
                 .id(attempt.getId())
                 .examId(attempt.getExam().getId())
+                .examTitle(attempt.getExam().getTitle())
                 .studentId(attempt.getStudent().getId())
                 .status(attempt.getStatus())
                 .durationMinutes(attempt.getExam().getDuration())
+                .totalScore(attempt.getExam().getTotalScore())
                 .startedAt(attempt.getStartedAt())
                 .submittedAt(attempt.getSubmittedAt())
                 .expiresAt(attempt.getExpiresAt())
@@ -327,11 +378,26 @@ public class StudentAttemptService {
         QuestionOption correctOption = getCorrectOption(question);
         boolean answered = answer != null && answer.getSelectedOption() != null;
         boolean correct = answered && Boolean.TRUE.equals(answer.getIsCorrect());
+        List<AttemptQuestionOptionResultResponse> optionResults = question.getOptions().stream()
+                .sorted(Comparator
+                        .comparing(QuestionOption::getOptionOrder, Comparator.nullsLast(Comparator.naturalOrder()))
+                        .thenComparing(QuestionOption::getId, Comparator.nullsLast(Comparator.naturalOrder())))
+                .map(option -> AttemptQuestionOptionResultResponse.builder()
+                        .optionId(option.getId())
+                        .content(option.getContent())
+                        .optionOrder(option.getOptionOrder())
+                        .correct(Boolean.TRUE.equals(option.getIsCorrect()))
+                        .selected(answered && option.getId().equals(answer.getSelectedOption().getId()))
+                        .build())
+                .toList();
 
         return AttemptQuestionResultResponse.builder()
                 .questionId(question.getId())
                 .questionOrder(question.getQuestionOrder())
                 .content(question.getContent())
+                .questionType(question.getQuestionType() != null ? question.getQuestionType().name() : null)
+                .passageId(question.getPassage() != null ? question.getPassage().getId() : null)
+                .passageContent(question.getPassage() != null ? question.getPassage().getContent() : null)
                 .points(question.getPoints())
                 .earnedPoints(answer != null ? answer.getEarnedPoints() : 0.0)
                 .answered(answered)
@@ -340,6 +406,7 @@ public class StudentAttemptService {
                 .selectedOptionContent(answered ? answer.getSelectedOption().getContent() : null)
                 .correctOptionId(correctOption != null ? correctOption.getId() : null)
                 .correctOptionContent(correctOption != null ? correctOption.getContent() : null)
+                .options(optionResults)
                 .build();
     }
 }

@@ -3,6 +3,7 @@ package com.examsphere.controller;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -12,6 +13,7 @@ import com.examsphere.dto.response.AttemptAnswerResponse;
 import com.examsphere.dto.response.ApiResponse;
 import com.examsphere.dto.response.AttemptResponse;
 import com.examsphere.dto.response.AttemptResultResponse;
+import com.examsphere.enums.AttemptStatus;
 import com.examsphere.service.StudentAttemptService;
 
 import jakarta.validation.Valid;
@@ -37,6 +39,13 @@ public class StudentAttemptController {
     ApiResponse<AttemptResponse> getAttempt(@PathVariable Long attemptId) {
         return ApiResponse.<AttemptResponse>builder()
                 .data(studentAttemptService.getAttempt(attemptId))
+                .build();
+    }
+
+    @GetMapping("/attempts")
+    ApiResponse<java.util.List<AttemptResponse>> getAttempts(@RequestParam(required = false) AttemptStatus status) {
+        return ApiResponse.<java.util.List<AttemptResponse>>builder()
+                .data(studentAttemptService.getAttempts(status))
                 .build();
     }
 

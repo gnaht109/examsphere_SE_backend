@@ -19,9 +19,11 @@ public class AttemptResponse {
 
     Long id;
     Long examId;
+    String examTitle;
     Long studentId;
     AttemptStatus status;
     Integer durationMinutes;
+    Double totalScore;
     LocalDateTime startedAt;
     LocalDateTime submittedAt;
     LocalDateTime expiresAt;
