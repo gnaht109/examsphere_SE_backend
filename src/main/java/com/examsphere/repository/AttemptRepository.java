@@ -10,6 +10,8 @@ import com.examsphere.model.Attempt;
 @Repository
 public interface AttemptRepository extends JpaRepository<Attempt, Long> {
 
+    boolean existsByExamId(Long examId);
+
     Optional<Attempt> findByIdAndStudentId(Long attemptId, Long studentId);
 
     List<Attempt> findAllByExamIdAndStudentIdOrderByStartedAtDescIdDesc(Long examId, Long studentId);

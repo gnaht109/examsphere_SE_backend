@@ -67,6 +67,10 @@ public class Exam {
     @Builder.Default
     List<Question> questions = new ArrayList<>();
 
+    @OneToMany(mappedBy = "exam", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
+    List<Attempt> attempts = new ArrayList<>();
+
     LocalDateTime createdAt;
     LocalDateTime updatedAt;
 

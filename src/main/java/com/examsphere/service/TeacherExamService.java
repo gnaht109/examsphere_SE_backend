@@ -24,6 +24,7 @@ import com.examsphere.model.Passage;
 import com.examsphere.model.Question;
 import com.examsphere.model.QuestionOption;
 import com.examsphere.model.User;
+import com.examsphere.repository.AttemptRepository;
 import com.examsphere.repository.ExamRepository;
 import com.examsphere.repository.PassageRepository;
 import com.examsphere.repository.QuestionRepository;
@@ -37,6 +38,7 @@ import lombok.experimental.FieldDefaults;
 public class TeacherExamService {
 
     ExamRepository examRepository;
+    AttemptRepository attemptRepository;
     PassageRepository passageRepository;
     QuestionRepository questionRepository;
     AuthService authService;
