@@ -24,6 +24,7 @@ public enum ErrorCode {
     EXAM_NOT_PUBLISHED(2003, "Exam is not published yet", HttpStatus.BAD_REQUEST),
     EXAM_CANNOT_PUBLISH_EMPTY(2004, "Cannot publish an exam with no questions", HttpStatus.BAD_REQUEST),
     EXAM_INVALID_TOTAL_SCORE(2005, "Exam question points must match the total score", HttpStatus.BAD_REQUEST),
+    EXAM_HAS_ATTEMPTS(2006, "Cannot delete exam with existing attempts", HttpStatus.CONFLICT),
     
     // Question — 3000s
     QUESTION_NOT_FOUND(3001, "Question not found", HttpStatus.NOT_FOUND),

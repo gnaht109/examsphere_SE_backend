@@ -1,9 +1,12 @@
 package com.examsphere.model;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 import com.examsphere.enums.AttemptStatus;
 
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
@@ -13,6 +16,7 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToMany;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
 import lombok.AccessLevel;
@@ -48,6 +52,10 @@ public class Attempt {
     @Enumerated(EnumType.STRING)
     @Builder.Default
     AttemptStatus status = AttemptStatus.IN_PROGRESS;
+
+    @OneToMany(mappedBy = "attempt", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
+    List<AttemptAnswer> answers = new ArrayList<>();
 
     LocalDateTime startedAt;
     LocalDateTime submittedAt;
