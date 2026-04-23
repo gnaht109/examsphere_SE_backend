@@ -153,7 +153,7 @@ JWT_EXPIRATION=86400000
 ### Start the Application
 
 ```bash
-git clone https://github.com/your-username/examsphere.git
+git clone https://github.com/gnaht109/examsphere.git
 cd examsphere
 ./mvnw spring-boot:run
 ```
